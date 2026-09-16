@@ -26,7 +26,9 @@ from typing import Callable, Optional
 from backend.daemon import launcher
 
 HOST = "127.0.0.1"
-REQUEST_TIMEOUT_SECONDS = 120.0  # LLM + tool calls can take a while
+# LLM + tool calls can take a while: the coding agent may run up to
+# ~15 tool rounds, each with an LLM call and up to a 60s command.
+REQUEST_TIMEOUT_SECONDS = 600.0
 EXIT_COMMANDS = {"exit", "quit", "q"}
 RESET_COMMANDS = {"reset", "clear", "/reset"}
 MODE_COMMANDS = {"mode"}

@@ -18,7 +18,12 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
-from backend.llm.client import DEFAULT_MODEL, resolve_api_key, get_client
+from backend.llm.client import (
+    AGENT_MAX_TOKENS,
+    resolve_agent_api_key,
+    resolve_agent_model,
+    get_agent_client,
+)
 from backend.orchestrator.events import emit_event
 
 # ---------------------------------------------------------------------------
@@ -346,7 +351,7 @@ def _run_command(
     return output, result.returncode, bool(result.stderr)
 
 
-MAX_TOOL_ROUNDS = 5  # prevent infinite loops
+MAX_TOOL_ROUNDS = 15  # prevent infinite loops
 
 
 def _parse_tool_args(raw_arguments: str) -> dict[str, Any]:
@@ -392,10 +397,10 @@ def _create_with_retry(client: Any, api_messages: list[dict[str, Any]]) -> Any:
     for attempt in range(MAX_LLM_RETRIES + 1):
         try:
             return client.chat.completions.create(
-                model=DEFAULT_MODEL,
+                model=resolve_agent_model(),
                 messages=attempt_messages,
                 tools=TOOL_DEFINITIONS,
-                max_completion_tokens=2048,
+                max_tokens=AGENT_MAX_TOKENS,
             )
         except Exception as exc:
             if attempt >= MAX_LLM_RETRIES or not _is_provider_tool_use_error(exc):
@@ -514,17 +519,17 @@ def coding_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     system_prompt = SYSTEM_PROMPT + mode_config.get("prompt_suffix", "")
     max_tool_rounds = int(mode_config.get("max_tool_rounds", MAX_TOOL_ROUNDS))
 
-    api_key = resolve_api_key()
+    api_key = resolve_agent_api_key()
     if not api_key:
         reply = (
-            "I need a Groq API key to think. Set the GROQ_API_KEY "
+            "I need an OpenRouter API key to code. Set the OPENROUTER_API_KEY "
             "environment variable, or add it to a .env file in the project "
             "root, then try again."
         )
         return {"messages": messages + [AIMessage(content=reply)]}
 
     try:
-        client = get_client()
+        client = get_agent_client()
     except ValueError as exc:
         return {"messages": messages + [AIMessage(content=str(exc))]}
 

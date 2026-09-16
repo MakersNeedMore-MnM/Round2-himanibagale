@@ -1,12 +1,24 @@
-"""Groq-backed chat client for the CodeLith daemon.
+"""LLM chat clients for the CodeLith daemon.
 
-The API key is resolved from, in order:
+Two independent providers are used:
 
-1. the ``GROQ_API_KEY`` environment variable,
+- **Groq** — the mentor-side models (teacher agent, assessment grading,
+  concept detection, dashboard questions).  Key: ``GROQ_API_KEY``.
+- **OpenRouter** — the workhorse coding models (coding agent, debug
+  agent).  Key: ``OPENROUTER_API_KEY``.  The model is chosen with
+  ``CODELITH_AGENT_MODEL`` (default: ``qwen/qwen3-coder-next``, a cheap
+  code-specialised model with a 262k context and native tool calling).
+
+Both providers are OpenAI-compatible, so a single ``openai`` SDK client
+is used with a different ``base_url`` per provider.
+
+API keys are resolved from, in order:
+
+1. the environment variable (``GROQ_API_KEY`` / ``OPENROUTER_API_KEY``),
 2. a ``.env`` file in the repository root,
 3. a ``.env`` file in the daemon state directory (``~/.mentor/``).
 
-Files are re-read on every request, so adding the key to a ``.env`` file
+Files are re-read on every request, so adding a key to a ``.env`` file
 takes effect without restarting the daemon. Usage::
 
     from backend.llm.client import generate_reply
@@ -27,6 +39,18 @@ GROQ_API_KEY_ENV = "GROQ_API_KEY"
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 MAX_COMPLETION_TOKENS = 4096
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+
+OPENROUTER_API_KEY_ENV = "OPENROUTER_API_KEY"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+# Coding/debug agent workhorse model.  Qwen3-Coder-Next: code-specialised,
+# native tool calling, 262k context, generous output budget.  Override with
+# the CODELITH_AGENT_MODEL env var, e.g. "anthropic/claude-sonnet-4.5" for
+# the strongest agentic coder (paid) or any OpenRouter "...:free" model.
+DEFAULT_AGENT_MODEL = "qwen/qwen3-coder-next"
+AGENT_MODEL_ENV = "CODELITH_AGENT_MODEL"
+# Per-round completion budget for the coding/debug agents.  OpenRouter
+# models (unlike Groq) expose this via the ``max_tokens`` parameter.
+AGENT_MAX_TOKENS = 8192
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ENV_FILES = (
@@ -83,6 +107,23 @@ def resolve_api_key() -> Optional[str]:
     return None
 
 
+def resolve_agent_api_key() -> Optional[str]:
+    """Return the OpenRouter API key, or None if it is not configured anywhere."""
+    if os.environ.get(OPENROUTER_API_KEY_ENV):
+        return os.environ[OPENROUTER_API_KEY_ENV].strip()
+    for path in ENV_FILES:
+        _load_dotenv(path)
+        key = os.environ.get(OPENROUTER_API_KEY_ENV)
+        if key:
+            return key.strip()
+    return None
+
+
+def resolve_agent_model() -> str:
+    """Return the coding-agent model slug (CODELITH_AGENT_MODEL or default)."""
+    return (os.environ.get(AGENT_MODEL_ENV) or DEFAULT_AGENT_MODEL).strip()
+
+
 def get_client() -> OpenAI:
     """Return an OpenAI-compatible client pointed at Groq."""
     api_key = resolve_api_key()
@@ -93,6 +134,20 @@ def get_client() -> OpenAI:
         )
     return OpenAI(
         base_url=GROQ_BASE_URL,
+        api_key=api_key,
+    )
+
+
+def get_agent_client() -> OpenAI:
+    """Return an OpenAI-compatible client pointed at OpenRouter."""
+    api_key = resolve_agent_api_key()
+    if not api_key:
+        raise ValueError(
+            "No OpenRouter API key found. Set OPENROUTER_API_KEY "
+            "environment variable, or add it to a .env file."
+        )
+    return OpenAI(
+        base_url=OPENROUTER_BASE_URL,
         api_key=api_key,
     )
 

@@ -53,7 +53,7 @@ LEARN_MODE = ModeConfig(
     agent_explains=True,
     llm_detection=True,
     surface_concepts=True,
-    max_tool_rounds=3,
+    max_tool_rounds=8,
     assessment_frequency="high",
     prompt_suffix=(
         "\n\n## LEARN MODE\n"
@@ -73,7 +73,7 @@ PAIR_PROGRAMMING_MODE = ModeConfig(
     agent_explains=False,
     llm_detection=True,
     surface_concepts=True,
-    max_tool_rounds=5,
+    max_tool_rounds=12,
     assessment_frequency="low",
     prompt_suffix=(
         "\n\n## PAIR PROGRAMMING MODE\n"
@@ -93,7 +93,7 @@ AUTONOMOUS_MODE = ModeConfig(
     agent_explains=False,
     llm_detection=False,
     surface_concepts=True,
-    max_tool_rounds=7,
+    max_tool_rounds=15,
     assessment_frequency="none",
     prompt_suffix=(
         "\n\n## AUTONOMOUS MODE\n"

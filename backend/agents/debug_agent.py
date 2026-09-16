@@ -28,7 +28,12 @@ from backend.agents.coding_agent import (
     _edit_file,
     _run_command,
 )
-from backend.llm.client import DEFAULT_MODEL, resolve_api_key, get_client
+from backend.llm.client import (
+    AGENT_MAX_TOKENS,
+    resolve_agent_api_key,
+    resolve_agent_model,
+    get_agent_client,
+)
 
 # ---------------------------------------------------------------------------
 # System prompt
@@ -53,16 +58,16 @@ def debug_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     messages: list[BaseMessage] = state.get("messages", [])
     workspace_root: str = state.get("workspace_root", os.getcwd())
 
-    api_key = resolve_api_key()
+    api_key = resolve_agent_api_key()
     if not api_key:
         reply = (
-            "Debug agent needs a Groq API key. Set GROQ_API_KEY "
+            "Debug agent needs an OpenRouter API key. Set OPENROUTER_API_KEY "
             "environment variable and try again."
         )
         return {"messages": messages + [AIMessage(content=reply)]}
 
     try:
-        client = get_client()
+        client = get_agent_client()
     except ValueError as exc:
         return {"messages": messages + [AIMessage(content=str(exc))]}
 
@@ -80,10 +85,10 @@ def debug_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     for _ in range(MAX_TOOL_ROUNDS):
         try:
             completion = client.chat.completions.create(
-                model=DEFAULT_MODEL,
+                model=resolve_agent_model(),
                 messages=api_messages,
                 tools=TOOL_DEFINITIONS,
-                max_completion_tokens=2048,
+                max_tokens=AGENT_MAX_TOKENS,
             )
         except Exception as exc:
             reply_text = f"(LLM error: {exc})"
