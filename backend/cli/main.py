@@ -20,6 +20,7 @@ import json
 import os
 import sys
 import threading
+import time
 import urllib.error
 import urllib.request
 from typing import Callable, Optional
@@ -129,13 +130,25 @@ ANSI_RESET = "\033[0m"
 
 TAGLINE = "an AI mentor that blends coding assistance with adaptive teaching"
 
+LOGO_ROWS = 6
+REVEAL_DELAY_SECONDS = 0.1
+
 
 def render_logo() -> str:
     """Render the product name as outlined shadow-style block letters."""
+    return render_logo_frames()[-1]
+
+
+def render_logo_frames() -> list[str]:
+    """Return the logo after each successive letter, for the reveal animation."""
     letters = [_LOGO_LETTERS[ch] for ch in "CODELITH"]
-    return "\n".join(
-        " ".join(letter[row] for letter in letters) for row in range(6)
-    )
+    return [
+        "\n".join(
+            " ".join(letter[row] for letter in letters[:count])
+            for row in range(LOGO_ROWS)
+        )
+        for count in range(1, len(letters) + 1)
+    ]
 
 
 def _colors_enabled() -> bool:
@@ -146,17 +159,37 @@ def _colors_enabled() -> bool:
 
 
 def print_banner() -> None:
-    """Print the big startup logo and tagline."""
+    """Print the big startup logo and tagline, revealing it letter by letter."""
     if os.name == "nt":
         os.system("")  # enables ANSI escape processing on Windows consoles
-    lines = render_logo().splitlines()
+    frames = render_logo_frames()
+    lines = frames[-1].splitlines()
     width = max(len(line) for line in lines)
-    if _colors_enabled():
-        for line, color in zip(lines, _LOGO_GRADIENT):
-            print(f"{color}{line}{ANSI_RESET}")
+    colors = _colors_enabled()
+    # Animate only on a real terminal; piped output (logs, CI) gets the
+    # finished logo instantly, and NO_COLOR opts out of the flourish too.
+    animate = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+    if animate:
+        cursor_up = f"\033[{LOGO_ROWS}A"  # jump back above the previous frame
+        for index, frame in enumerate(frames):
+            if index:
+                sys.stdout.write(cursor_up)
+            for row, line in enumerate(frame.splitlines()):
+                if colors:
+                    sys.stdout.write(f"{_LOGO_GRADIENT[row]}{line}{ANSI_RESET}\n")
+                else:
+                    sys.stdout.write(line + "\n")
+            sys.stdout.flush()
+            time.sleep(REVEAL_DELAY_SECONDS)
+    else:
+        for row, line in enumerate(lines):
+            if colors:
+                print(f"{_LOGO_GRADIENT[row]}{line}{ANSI_RESET}")
+            else:
+                print(line)
+    if colors:
         print(f"{ANSI_DIM}{TAGLINE.center(width)}{ANSI_RESET}")
     else:
-        print("\n".join(lines))
         print(TAGLINE.center(width))
     print()
 
