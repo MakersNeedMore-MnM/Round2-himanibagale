@@ -534,7 +534,8 @@ class DetectedConcept:
     # over the alternative, a trade-off accepted, a constraint honored.
     # Empty for textbook-only concepts with no author choice, and for
     # registry matches (the registry teaches the technique, not this
-    # file's use of it).
+    # file's use of it).  Always populated for ``decisions`` concepts,
+    # where the choice itself is the concept.
     decision: str = ""
 
 
@@ -730,15 +731,30 @@ Return ONLY a JSON array of objects with keys: "name", "category",
 "description", "decision", "diagram".
 If there are no notable concepts, return an empty array [].
 
-The "category" value MUST be exactly one of these five strings — no
+The "category" value MUST be exactly one of these six strings — no
 other values, no capitalization changes, no invented labels:
 - "algorithm"  — loops, sorting, searching, recursion, big-O reasoning
 - "structure"  — classes, interfaces, inheritance, encapsulation, OOP
 - "api"        — calls into a defined interface: fetch, DOM, SDKs, hooks
 - "data_model" — how data is shaped or moved: schemas, type aliases,
   JSON payloads, ORMs, validation
+- "decisions"  — architecture and integration choices made in THIS
+  codebase: which service, library, or tool was picked for a job
+  (Supabase for auth or the database, Firebase, Stripe, Redis, ...)
+  and how features/modules are wired together (who owns what, which
+  module reaches which)
 - "abstract"   — cross-cutting ideas: error handling, modules, async,
   design patterns
+
+"decisions" concepts are about the CODEBASE, not a technique.  Emit one
+ONLY when the snippet itself shows the evidence — an import, an SDK
+client being constructed, a config/env read, or a call from one module
+into another.  Never speculate about files you cannot see.  Name it
+concretely ("Supabase session auth" beats "Authentication"; "Teacher
+agent reads detect_concepts state" beats "Shared state"), and ALWAYS
+fill "decision" for a decisions concept — the choice and the reason for
+it IS the concept.  Two or three decisions per snippet is plenty; skip
+them entirely when the code shows no such choice.
 
 The "decision" value records the CHOICE THE AUTHOR MADE — one sentence,
 specific to this code, never generic:
@@ -755,7 +771,10 @@ The "diagram" value must be a small, valid Mermaid diagram WHOSE TYPE
 matches the concept's category — this routing is required:
 - "algorithm"  -> flowchart (process steps and decision points)
 - "structure"  -> classDiagram (classes, methods, inheritance)
-- "api"        -> sequenceDiagram (participants exchanging messages)- "data_model" -> erDiagram (entities with attributes and relations)
+- "api"        -> sequenceDiagram (participants exchanging messages)
+- "data_model" -> erDiagram (entities with attributes and relations)
+- "decisions"  -> flowchart (how the pieces connect: feature -> tool
+  or service -> data store), few nodes, one arrow per real connection
 - "abstract"   -> "" (no diagram: the explanation is prose-only; do NOT
   invent one for abstract concepts)
 Aim for 3-6 nodes.  Use simple ASCII labels, wrap each
@@ -780,18 +799,19 @@ Code file: {file_path}
 CATEGORY_FIX_PROMPT = """\
 Your previous response described programming concepts but some
 "category" values were missing or not from the allowed set:
-algorithm, structure, api, data_model, abstract.
+algorithm, structure, api, data_model, decisions, abstract.
 
 Re-send ONLY a JSON object mapping each concept name below to an object
 with its corrected category, e.g. {{"Concept Name": {{"category":
-"api"}}}}.  Choose from the five allowed values only.
+"api"}}}}.  Choose from the six allowed values only.
 
 Concepts needing a category:
 {concepts}
 """
 
 DIAGRAM_BACKFILL_PROMPT = """\For each concept below, produce ONE small, valid Mermaid diagram whose
-TYPE matches the concept's category — flowchart for algorithm,
+TYPE matches the concept's category — flowchart for algorithm and
+decisions (the latter showing how the wired pieces connect),
 classDiagram for structure, sequenceDiagram for api, and erDiagram for
 data_model.  Aim for 3-6 nodes.  Use simple ASCII labels, wrap each
 label in square brackets (e.g. A[Label]), and never put parentheses or special

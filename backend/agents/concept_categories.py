@@ -1,7 +1,7 @@
 """Category taxonomy for detected concepts.
 
-Every concept detected — registry or LLM — must carry one of five fixed
-categories so the dashboard can group, filter, and (next) route diagrams
+Every concept detected — registry or LLM — must carry one of six fixed
+categories so the dashboard can group, filter, and route diagrams
 by category:
 
 - ``algorithm``  — loops, sorting, searching, recursion, big-O reasoning
@@ -9,6 +9,12 @@ by category:
 - ``api``        — calls into a defined interface: fetch, DOM, SDKs, hooks
 - ``data_model`` — how data is shaped/moved: schemas, interfaces, JSON
   payloads, ORMs, validation
+- ``decisions``  — architecture and integration choices made in THIS
+  codebase: which service/library/tool was picked for a job (Supabase
+  for auth, Stripe for billing), and how features are wired together
+  (who owns what, which module reaches which).  Named ``decisions``,
+  it is distinct from the singular ``decision`` field on a concept,
+  which records the rationale on ANY category.
 - ``abstract``   — cross-cutting ideas that aren't one of the above:
   error handling, module systems, async, design patterns
 
@@ -25,6 +31,7 @@ CONCEPT_CATEGORIES: tuple[str, ...] = (
     "structure",
     "api",
     "data_model",
+    "decisions",
     "abstract",
 )
 
@@ -67,6 +74,24 @@ _CATEGORY_ALIASES: dict[str, str] = {
     "type system": "data_model",
     "types": "data_model",
     "type": "data_model",
+    "decision": "decisions",
+    "decisions": "decisions",
+    "design decision": "decisions",
+    "design decisions": "decisions",
+    "architecture": "decisions",
+    "architectural decision": "decisions",
+    "architectural decisions": "decisions",
+    "system design": "decisions",
+    "tech stack": "decisions",
+    "technology choice": "decisions",
+    "tool choice": "decisions",
+    "tooling": "decisions",
+    "integration": "decisions",
+    "integrations": "decisions",
+    "third-party integration": "decisions",
+    "third party service": "decisions",
+    "infrastructure": "decisions",
+    "wiring": "decisions",
     "abstract": "abstract",
     "abstraction": "abstract",
     "general": DEFAULT_CATEGORY,
