@@ -17,6 +17,7 @@ or, after ``pip install -e .``::
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 import urllib.error
@@ -38,6 +39,126 @@ VALID_MODES = {"learn", "pair-programming", "autonomous"}
 # (e.g. the dashboard) so both directions stay in sync.
 MODE_POLL_SECONDS = 2.0
 MODE_POLL_TIMEOUT_SECONDS = 5.0
+
+
+# ---------------------------------------------------------------------------
+# Startup banner
+# ---------------------------------------------------------------------------
+
+# ANSI-shadow style glyphs: six rows each, outlined blocks with a
+# built-in drop shadow.
+_LOGO_LETTERS: dict[str, tuple[str, ...]] = {
+    "C": (
+        " ██████╗ ",
+        "██╔════╝ ",
+        "██║      ",
+        "██║      ",
+        "╚██████╗ ",
+        " ╚═════╝ ",
+    ),
+    "O": (
+        " ██████╗ ",
+        "██╔═══██╗",
+        "██║   ██║",
+        "██║   ██║",
+        "╚██████╔╝",
+        " ╚═════╝ ",
+    ),
+    "D": (
+        "██████╗ ",
+        "██╔══██╗",
+        "██║  ██║",
+        "██║  ██║",
+        "██████╔╝",
+        "╚═════╝ ",
+    ),
+    "E": (
+        "███████╗",
+        "██╔════╝",
+        "█████╗  ",
+        "██╔══╝  ",
+        "███████╗",
+        "╚══════╝",
+    ),
+    "L": (
+        "██╗     ",
+        "██║     ",
+        "██║     ",
+        "██║     ",
+        "███████╗",
+        "╚══════╝",
+    ),
+    "I": (
+        "████████╗",
+        "╚══██╔══╝",
+        "   ██║   ",
+        "   ██║   ",
+        "████████╗",
+        "╚═══════╝",
+    ),
+    "T": (
+        "████████╗",
+        "╚══██╔══╝",
+        "   ██║   ",
+        "   ██║   ",
+        "   ██║   ",
+        "   ╚═╝   ",
+    ),
+    "H": (
+        "██╗  ██╗",
+        "██║  ██║",
+        "███████║",
+        "██╔══██║",
+        "██║  ██║",
+        "╚═╝  ╚═╝",
+    ),
+}
+
+# Vertical gradient across the logo rows: bright cyan → cyan → bright
+# blue → blue → bright magenta → magenta.
+_LOGO_GRADIENT = (
+    "\033[96m",
+    "\033[36m",
+    "\033[94m",
+    "\033[34m",
+    "\033[95m",
+    "\033[35m",
+)
+ANSI_DIM = "\033[2m"
+ANSI_RESET = "\033[0m"
+
+TAGLINE = "an AI mentor that blends coding assistance with adaptive teaching"
+
+
+def render_logo() -> str:
+    """Render the product name as outlined shadow-style block letters."""
+    letters = [_LOGO_LETTERS[ch] for ch in "CODELITH"]
+    return "\n".join(
+        " ".join(letter[row] for letter in letters) for row in range(6)
+    )
+
+
+def _colors_enabled() -> bool:
+    """True when ANSI colours may be used (interactive tty, NO_COLOR unset)."""
+    if os.environ.get("NO_COLOR"):
+        return False
+    return sys.stdout.isatty()
+
+
+def print_banner() -> None:
+    """Print the big startup logo and tagline."""
+    if os.name == "nt":
+        os.system("")  # enables ANSI escape processing on Windows consoles
+    lines = render_logo().splitlines()
+    width = max(len(line) for line in lines)
+    if _colors_enabled():
+        for line, color in zip(lines, _LOGO_GRADIENT):
+            print(f"{color}{line}{ANSI_RESET}")
+        print(f"{ANSI_DIM}{TAGLINE.center(width)}{ANSI_RESET}")
+    else:
+        print("\n".join(lines))
+        print(TAGLINE.center(width))
+    print()
 
 
 def chat_url(port: int) -> str:
@@ -303,14 +424,11 @@ def _streaming_turn(
 
 def run_session(port: int) -> None:
     """Print the banner and loop until the user exits."""
-    import os
-
     workspace = os.getcwd()
     state = {"session": "default", "mode": fetch_current_mode(port, "default") or "learn"}
     session = state["session"]
     mode = state["mode"]
 
-    print("CodeLith AI — autonomous coding agent")
     print(f"Workspace: {workspace}")
     print(f"Mode: {mode}")
     print("Commands: exit/quit/q to leave, reset/clear to start fresh")
@@ -403,6 +521,7 @@ def main() -> int:
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
             pass
+    print_banner()
     try:
         _, port, _ = launcher.start()
     except SystemExit as exc:
