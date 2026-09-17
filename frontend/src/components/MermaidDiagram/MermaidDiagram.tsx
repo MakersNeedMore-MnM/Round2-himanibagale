@@ -1,50 +1,150 @@
 import { useEffect, useRef, useState } from 'react'
 import mermaid from 'mermaid'
 
-// Mermaid bakes text/fill colors into the SVG at render time, so the
-// palette must match the app theme BEFORE each render. Kept in sync
-// with the CSS variables in base.css (:root = dark, [data-theme] = light).
-const DARK_THEME_VARS = {
-  background: 'transparent',
-  primaryColor: '#25273c',
-  primaryTextColor: '#e9f8f9',
-  primaryBorderColor: '#537fe7',
-  secondaryColor: '#1f2030',
-  secondaryTextColor: '#e9f8f9',
-  secondaryBorderColor: '#3e4c7a',
-  tertiaryColor: '#181823',
-  lineColor: '#94a3b8',
-  textColor: '#e9f8f9',
-  fontSize: '14px',
-  fontFamily: 'Geist, system-ui, sans-serif',
+// Mermaid bakes text/fill colors into the SVG at render time, so the palette
+// must match the app theme BEFORE each render. Kept in sync with the CSS
+// variables in base.css (:root = dark, [data-theme] = light).
+//
+// Two traps in mermaid's `base` theme make that harder than it looks:
+//
+//  1. Missing variables are DERIVED from the handful we do set, and the
+//     derivation branches on `darkMode`. With `darkMode` unset mermaid derives
+//     the *light* variants — e.g. erDiagram row fills become
+//     `lighten(mainBkg, 75)` (94% lightness, i.e. near-white), which is what
+//     paints white stripes on a dark panel.
+//  2. Some variables are hard-coded literals in the base theme and are never
+//     derived: `altSectionBkgColor: 'white'`, `noteBkgColor: '#fff5ad'`,
+//     `noteTextColor: '#333'`, `gridColor`/`doneTaskBkgColor: 'lightgrey'`,
+//     `excludeBkgColor: '#eeeeee'`, `attributeBackgroundColorOdd/Even:
+//     '#ffffff'/'#f2f2f2'`. They have no dark counterpart at all, so each
+//     theme must override them explicitly.
+//
+// Flowcharts (the only diagrams we used to emit) read `primaryColor`/
+// `mainBkg` only, so trap 1 never showed up. Category routing now emits
+// erDiagram/classDiagram/sequenceDiagram, whose renderers read `rowOdd`,
+// `rowEven`, `actorBkg`, `signalColor`, … — hence the white patches.
+
+/** Palette roles shared by both themes, mapped onto mermaid's variable names. */
+interface Palette {
+  darkMode: boolean
+  surfaceDim: string
+  surface: string
+  surfaceElevated: string
+  border: string
+  borderStrong: string
+  accent: string
+  text: string
+  line: string
 }
 
-const LIGHT_THEME_VARS = {
-  background: 'transparent',
-  primaryColor: '#eef1f9',
-  primaryTextColor: '#161a2b',
-  primaryBorderColor: '#3b66c4',
-  secondaryColor: '#e5e9f4',
-  secondaryTextColor: '#161a2b',
-  secondaryBorderColor: '#b9c2da',
-  tertiaryColor: '#f4f6fb',
-  lineColor: '#5a6379',
-  textColor: '#161a2b',
-  fontSize: '14px',
-  fontFamily: 'Geist, system-ui, sans-serif',
+const DARK_PALETTE: Palette = {
+  darkMode: true,
+  surfaceDim: '#181823', // --color-bg
+  surface: '#1f2030', // --color-bg-card
+  surfaceElevated: '#25273c', // --color-bg-elevated
+  border: '#2e3248', // --color-border
+  borderStrong: '#3e4c7a', // --color-border-strong
+  accent: '#537fe7', // --color-accent
+  text: '#e9f8f9',
+  line: '#94a3b8',
 }
 
-const currentTheme = () =>
+const LIGHT_PALETTE: Palette = {
+  darkMode: false,
+  surfaceDim: '#f4f6fb',
+  surface: '#e5e9f4',
+  surfaceElevated: '#eef1f9',
+  border: '#d5dbeb',
+  borderStrong: '#b9c2da',
+  accent: '#3b66c4',
+  text: '#161a2b',
+  line: '#5a6379',
+}
+
+const themeVariablesFor = (p: Palette) => ({
+  darkMode: p.darkMode,
+  background: 'transparent',
+  fontSize: '14px',
+  fontFamily: 'Geist, system-ui, sans-serif',
+
+  // Core trio — the only variables flowcharts care about.
+  primaryColor: p.surfaceElevated,
+  primaryTextColor: p.text,
+  primaryBorderColor: p.accent,
+  secondaryColor: p.surface,
+  secondaryTextColor: p.text,
+  secondaryBorderColor: p.borderStrong,
+  tertiaryColor: p.surfaceDim,
+  textColor: p.text,
+  lineColor: p.line,
+
+  // Every variable below is one mermaid would otherwise leave at its light
+  // base-theme default while rendering on a dark panel.
+  mainBkg: p.surfaceElevated,
+  nodeBkg: p.surfaceElevated,
+  nodeBorder: p.accent,
+  nodeTextColor: p.text,
+  clusterBkg: p.surface,
+  clusterBorder: p.borderStrong,
+  titleColor: p.text,
+  edgeLabelBackground: p.surface,
+
+  // sequenceDiagram
+  actorBkg: p.surfaceElevated,
+  actorBorder: p.accent,
+  actorTextColor: p.text,
+  actorLineColor: p.borderStrong,
+  signalColor: p.line,
+  signalTextColor: p.text,
+  labelBoxBkgColor: p.surfaceElevated,
+  labelBoxBorderColor: p.accent,
+  labelTextColor: p.text,
+  loopTextColor: p.text,
+  activationBkgColor: p.surface,
+  activationBorderColor: p.borderStrong,
+  sequenceNumberColor: p.surfaceDim,
+  noteBkgColor: p.surfaceElevated,
+  noteTextColor: p.text,
+  noteBorderColor: p.borderStrong,
+  altSectionBkgColor: p.surface,
+  sectionBkgColor: p.surfaceDim,
+  sectionBkgColor2: p.surfaceElevated,
+
+  // erDiagram entity tables (rowOdd/rowEven paint the alternating rows)
+  rowOdd: p.surface,
+  rowEven: p.surfaceElevated,
+  attributeBackgroundColorOdd: p.surface,
+  attributeBackgroundColorEven: p.surfaceElevated,
+
+  // gantt / state / misc
+  gridColor: p.border,
+  taskBkgColor: p.surfaceElevated,
+  taskBorderColor: p.accent,
+  taskTextColor: p.text,
+  taskTextOutsideColor: p.text,
+  taskTextDarkColor: p.text,
+  activeTaskBkgColor: p.borderStrong,
+  activeTaskBorderColor: p.accent,
+  doneTaskBkgColor: p.surface,
+  doneTaskBorderColor: p.borderStrong,
+  excludeBkgColor: p.surfaceDim,
+  personBkg: p.surfaceElevated,
+  personBorder: p.accent,
+  errorBkgColor: p.surface,
+  errorTextColor: p.text,
+})
+
+const currentPalette = () =>
   document.documentElement.getAttribute('data-theme') === 'light'
-    ? 'light'
-    : 'dark'
+    ? LIGHT_PALETTE
+    : DARK_PALETTE
 
 const applyMermaidTheme = () => {
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
     theme: 'base',
-    themeVariables: currentTheme() === 'light' ? LIGHT_THEME_VARS : DARK_THEME_VARS,
+    themeVariables: themeVariablesFor(currentPalette()),
   })
 }
 
