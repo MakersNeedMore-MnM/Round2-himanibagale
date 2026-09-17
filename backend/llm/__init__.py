@@ -1,4 +1,4 @@
-"""LLM integration for the Mentor backend (currently Groq)."""
+"""LLM integration for the CodeLith backend (currently Groq)."""
 
 from backend.llm.client import DEFAULT_MODEL, generate_reply
 

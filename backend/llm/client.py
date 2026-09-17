@@ -2,7 +2,7 @@
 
 Two independent providers are used:
 
-- **Groq** — the mentor-side models (teacher agent, assessment grading,
+- **Groq** — the teaching-side models (teacher agent, assessment grading,
   concept detection, dashboard questions).  Key: ``GROQ_API_KEY``.
 - **OpenRouter** — the workhorse coding models (coding agent, debug
   agent).  Key: ``OPENROUTER_API_KEY``.  The model is chosen with
@@ -16,7 +16,7 @@ API keys are resolved from, in order:
 
 1. the environment variable (``GROQ_API_KEY`` / ``OPENROUTER_API_KEY``),
 2. a ``.env`` file in the repository root,
-3. a ``.env`` file in the daemon state directory (``~/.mentor/``).
+3. a ``.env`` file in the daemon state directory (``~/.codelith/``).
 
 Files are re-read on every request, so adding a key to a ``.env`` file
 takes effect without restarting the daemon. Usage::
@@ -55,11 +55,11 @@ AGENT_MAX_TOKENS = 8192
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ENV_FILES = (
     REPO_ROOT / ".env",
-    Path.home() / ".mentor" / ".env",
+    Path.home() / ".codelith" / ".env",
 )
 
 SYSTEM_PROMPT = (
-    "You are Mentor, an AI mentor that blends coding assistance with "
+    "You are CodeLith, an AI mentor that blends coding assistance with "
     "adaptive teaching. The user is learning to code. Teach at their level: "
     "explain concepts clearly, use concrete examples, and guide them toward "
     "solutions instead of just giving the answer. Keep answers focused and "
@@ -67,7 +67,7 @@ SYSTEM_PROMPT = (
 )
 
 GRADING_SYSTEM_PROMPT = (
-    "You are Mentor, an AI mentor grading a learner's answer to a concept "
+    "You are CodeLith, an AI mentor grading a learner's answer to a concept "
     "question. Judge whether the answer shows real understanding of the "
     "concept. Be fair: accept correct answers even if they are worded "
     "differently from a textbook, but reject answers that are wrong or "
@@ -157,7 +157,7 @@ def generate_reply(
     model: str = DEFAULT_MODEL,
     history: Optional[list[dict]] = None,
 ) -> str:
-    """Ask Groq for a reply to ``user_message`` using the Mentor persona.
+    """Ask Groq for a reply to ``user_message`` using the CodeLith persona.
 
     ``history`` is an optional list of prior turns (``{"role", "content"}``
     dicts, oldest first) so follow-up questions keep their context.

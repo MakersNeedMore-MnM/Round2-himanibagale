@@ -16,7 +16,7 @@ Three areas are covered here:
 
 The store itself (identity slugs, content-hash caching, real thread-
 contention concurrency) is exercised in the classes below.
-Isolation from the user's real ``~/.mentor`` is two-layered: a
+Isolation from the user's real ``~/.codelith`` is two-layered: a
 structural guard in ``concepts._resolve_db_path`` (temp DB under any
 test runner, fail-closed with no fixture cooperation needed) plus the
 ``IsolatedStoreTest`` base class here, which patches ``DB_PATH`` per
@@ -85,7 +85,7 @@ class IsolatedStoreTest(unittest.TestCase):
         from backend.database import concepts as store
 
         self.store = importlib.reload(store)  # fresh module state
-        self.store.DB_PATH = Path(self._tmp.name) / "mentor.db"
+        self.store.DB_PATH = Path(self._tmp.name) / "codelith.db"
         self.store._schema_ready = False
         self.addCleanup(self._restore_store)
         self.addCleanup(self._tmp.cleanup)

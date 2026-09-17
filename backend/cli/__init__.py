@@ -1,1 +1,1 @@
-"""CodeLith command-line interface: interactive Mentor sessions over the daemon."""
+"""CodeLith command-line interface: interactive CodeLith sessions over the daemon."""

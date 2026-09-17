@@ -1,4 +1,4 @@
-"""Mentor CLI: an interactive session that talks to the local daemon.
+"""CodeLith CLI: an interactive session that talks to the local daemon.
 
 The CLI makes sure the daemon is running (starting it as a detached process if
 needed — see ``backend.daemon.launcher``), then relays every line the user
@@ -11,7 +11,7 @@ Run it from the repo root with::
 
 or, after ``pip install -e .``::
 
-    mentor
+    codelith
 """
 
 from __future__ import annotations

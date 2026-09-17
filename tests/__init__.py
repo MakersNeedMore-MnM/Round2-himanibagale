@@ -1,6 +1,6 @@
 """Test suite root package.
 
-Isolation from the user's real ``~/.mentor`` store is structural, not
+Isolation from the user's real ``~/.codelith`` store is structural, not
 fixture-based: :mod:`backend.database.concepts` resolves ``DB_PATH``
 into per-process temp space whenever the process looks like a test
 run (unittest/pytest in ``sys.argv``, or pytest's env marker).  A test

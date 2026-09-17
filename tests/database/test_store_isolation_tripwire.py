@@ -4,7 +4,7 @@ This file deliberately does NOT opt into any fixture.  It exists to
 fail loudly if the structural guard in
 ``backend.database.concepts._resolve_db_path`` ever stops working —
 the exact failure mode that once wrote test rows into the user's real
-``~/.mentor/mentor.db``.  Isolation must be the default, not
+``~/.codelith/codelith.db``.  Isolation must be the default, not
 something each test has to remember.
 """
 
@@ -17,7 +17,7 @@ from backend.database import concepts as store
 
 class TestUnisolatedTestsStillIsolated(unittest.TestCase):
     def test_db_path_is_temp_space_not_real_home(self) -> None:
-        real = Path.home() / ".mentor" / "mentor.db"
+        real = Path.home() / ".codelith" / "codelith.db"
         self.assertNotEqual(
             store.DB_PATH, real,
             "store resolved to the REAL user database inside a test — "
@@ -37,7 +37,7 @@ class TestUnisolatedTestsStillIsolated(unittest.TestCase):
             "concept_name": "Probe", "explanation": "x", "content_hash": "hx",
         })
         importlib.reload(store)
-        real = Path.home() / ".mentor" / "mentor.db"
+        real = Path.home() / ".codelith" / "codelith.db"
         self.assertNotEqual(store.DB_PATH, real)
         self.assertIn(
             str(Path(tempfile.gettempdir())).lower(),

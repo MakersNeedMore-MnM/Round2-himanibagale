@@ -1,6 +1,6 @@
 """Concept storage — persists learned concepts per session.
 
-Storage is a single SQLite database (``~/.mentor/mentor.db``) with three
+Storage is a single SQLite database (``~/.codelith/codelith.db``) with three
 tables — ``concepts``, ``teachings``, ``assessments`` — mirroring the
 previous three JSON stores.  WAL journal mode is enabled so the daemon
 can write while the dashboard reads concurrently without
@@ -38,7 +38,7 @@ def _resolve_db_path() -> Path:
 
     When the process looks like a test run (unittest/pytest in argv,
     or pytest's env marker), the store resolves into a per-process temp
-    directory instead of the user's real ``~/.mentor``.  This is the
+    directory instead of the user's real ``~/.codelith``.  This is the
     hard structural guarantee that a test can never pollute real data:
     it does not depend on any fixture remembering to patch DB_PATH —
     an unisolated test simply lands in temp space, where a wrong
@@ -57,10 +57,10 @@ def _resolve_db_path() -> Path:
     )
     if under_test_runner:
         return (
-            Path(tempfile.gettempdir()) / "mentor-tests"
-            / f"mentor-{os.getpid()}.db"
+            Path(tempfile.gettempdir()) / "codelith-tests"
+            / f"codelith-{os.getpid()}.db"
         )
-    return Path.home() / ".mentor" / "mentor.db"
+    return Path.home() / ".codelith" / "codelith.db"
 
 
 DB_PATH = _resolve_db_path()

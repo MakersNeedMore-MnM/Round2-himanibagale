@@ -1,6 +1,6 @@
 """Shared pytest fixtures for the whole test suite.
 
-Isolation from the user's real ``~/.mentor`` store is *primarily*
+Isolation from the user's real ``~/.codelith`` store is *primarily*
 structural: :mod:`backend.database.concepts` resolves ``DB_PATH``
 into per-process temp space when the process looks like a test run —
 see ``_resolve_db_path`` there.  The autouse fixture below adds the
@@ -26,9 +26,9 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def isolated_store(request, monkeypatch):
-    """Give every test a private temp ``mentor.db`` (per-test layer)."""
-    tmp = tempfile.mkdtemp(prefix="mentor-test-")
-    db_path = Path(tmp) / "mentor.db"
+    """Give every test a private temp ``codelith.db`` (per-test layer)."""
+    tmp = tempfile.mkdtemp(prefix="codelith-test-")
+    db_path = Path(tmp) / "codelith.db"
 
     import backend.database.concepts as store
 

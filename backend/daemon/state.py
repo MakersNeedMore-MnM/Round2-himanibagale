@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-STATE_DIR_NAME = ".mentor"
+STATE_DIR_NAME = ".codelith"
 PID_FILE_NAME = "daemon.pid"
 PORT_FILE_NAME = "daemon.port"
 
@@ -12,7 +12,7 @@ PORT_FILE = Path.home() / STATE_DIR_NAME / PORT_FILE_NAME
 
 
 def state_dir() -> Path:
-    """Return the directory where daemon state files live (~/.mentor/)."""
+    """Return the directory where daemon state files live (~/.codelith/)."""
     return Path.home() / STATE_DIR_NAME
 
 
