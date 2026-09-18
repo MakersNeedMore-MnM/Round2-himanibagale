@@ -25,6 +25,7 @@ import urllib.error
 import urllib.request
 from typing import Callable, Optional
 
+from backend.cli import config_cmd
 from backend.daemon import launcher
 
 HOST = "127.0.0.1"
@@ -544,8 +545,20 @@ def run_session(port: int) -> None:
         print(reply)
 
 
-def main() -> int:
-    """Ensure the daemon is running, then start the interactive session."""
+def main(argv: Optional[list[str]] = None) -> int:
+    """Dispatch CLI subcommands, or start the interactive chat session.
+
+    ``codelith config ...`` never starts the daemon and never prompts for
+    anything — inspection stays side-effect free.  With no recognized
+    subcommand, the normal chat session runs (banner, daemon, loop).
+    """
+    argv = list(sys.argv[1:] if argv is None else argv)
+
+    # Subcommand dispatch must run BEFORE any banner/daemon work so
+    # non-LLM commands (--help-style inspection) stay quiet and fast.
+    if argv and argv[0] == "config":
+        return config_cmd.main(argv[1:])
+
     # Windows consoles default to cp1252 and raise UnicodeEncodeError on
     # non-Latin-1 output; LLM replies can contain emoji or other Unicode,
     # so force UTF-8 and replace any undisplayable characters.

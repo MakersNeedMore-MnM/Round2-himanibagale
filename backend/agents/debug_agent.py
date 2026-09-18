@@ -31,9 +31,9 @@ from backend.agents.coding_agent import (
 from backend.llm.client import (
     AGENT_MAX_TOKENS,
     resolve_agent_api_key,
-    resolve_agent_model,
     get_agent_client,
 )
+from backend.llm.config import get_model
 
 # ---------------------------------------------------------------------------
 # System prompt
@@ -85,7 +85,7 @@ def debug_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     for _ in range(MAX_TOOL_ROUNDS):
         try:
             completion = client.chat.completions.create(
-                model=resolve_agent_model(),
+                model=get_model("debugging"),
                 messages=api_messages,
                 tools=TOOL_DEFINITIONS,
                 max_tokens=AGENT_MAX_TOKENS,

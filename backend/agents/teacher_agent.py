@@ -15,7 +15,8 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
-from backend.llm.client import DEFAULT_MODEL, resolve_api_key, get_client
+from backend.llm.client import resolve_api_key, get_client
+from backend.llm.config import get_model
 
 # Shims for backwards compatibility — the detection engine lives in
 # backend.agents.concept_detector now.  These names were importable from
@@ -166,7 +167,7 @@ def _answer_user_question(question: str, concepts: list[dict[str, Any]]) -> str:
     try:
         client = get_client()
         completion = client.chat.completions.create(
-            model=DEFAULT_MODEL,
+            model=get_model("teaching"),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question},

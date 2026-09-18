@@ -17,7 +17,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from backend.llm.client import DEFAULT_MODEL, resolve_api_key, get_client
+from backend.llm.client import DEFAULT_MODEL, resolve_api_key, get_client  # noqa: F401 (DEFAULT_MODEL re-exported)
+from backend.llm.config import get_model
 
 # ---------------------------------------------------------------------------
 # Socratic question templates

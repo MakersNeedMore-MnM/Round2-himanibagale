@@ -35,7 +35,11 @@ from typing import Any, Optional
 
 from openai import OpenAI
 
+from backend.llm.config import get_model
+
 GROQ_API_KEY_ENV = "GROQ_API_KEY"
+# Kept for backwards compatibility with existing imports; teaching-side
+# model selection now goes through backend.llm.config.get_model(role).
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 MAX_COMPLETION_TOKENS = 4096
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
@@ -57,6 +61,63 @@ ENV_FILES = (
     REPO_ROOT / ".env",
     Path.home() / ".codelith" / ".env",
 )
+
+# OS credential store (Windows Credential Manager, macOS Keychain,
+# Secret Service).  Keys land here when saved through `codelith setup`;
+# env vars and .env files keep working unchanged for users who prefer
+# them.  keyring is an optional dependency: absence or an unlocked/
+# missing backend degrades gracefully to the .env path below.
+KEYRING_SERVICE = "codelith"
+KEYRING_ACCOUNTS = {
+    GROQ_API_KEY_ENV: "groq",
+    OPENROUTER_API_KEY_ENV: "openrouter",
+}
+
+
+def _keyring_get(env_name: str) -> Optional[str]:
+    """Return a key from the OS credential store, or None.
+
+    Never raises: any keyring failure (module missing, no backend,
+    locked keychain) just means "not stored here" and resolution falls
+    through to the env-var/.env layers.
+    """
+    try:
+        import keyring
+    except ImportError:
+        return None
+    try:
+        secret = keyring.get_password(KEYRING_SERVICE, KEYRING_ACCOUNTS[env_name])
+    except Exception:  # noqa: BLE001 - keyring backends raise many shapes
+        return None
+    return secret.strip() if secret and secret.strip() else None
+
+
+def _keyring_set(env_name: str, api_key: str) -> bool:
+    """Store a key in the OS credential store.  Returns True on success."""
+    try:
+        import keyring
+    except ImportError:
+        return False
+    try:
+        keyring.set_password(KEYRING_SERVICE, KEYRING_ACCOUNTS[env_name], api_key.strip())
+        return True
+    except Exception:  # noqa: BLE001 - no backend / locked store / ACL error
+        return False
+
+
+def store_api_key(provider: str, api_key: str) -> bool:
+    """Securely persist *provider*'s API key (``"groq"``/``"openrouter"``).
+
+    Public entry point for the first-run setup flow.  Returns False when
+    no usable keyring backend exists — the caller should then fall back
+    to advising a .env file instead of storing the key in plaintext.
+    """
+    env_name = {v: k for k, v in KEYRING_ACCOUNTS.items()}.get(provider)
+    if not env_name:
+        raise ValueError(f"unknown provider: {provider!r} (known: {', '.join(sorted(KEYRING_ACCOUNTS.values()))})")
+    if not api_key.strip():
+        raise ValueError("API key must not be empty")
+    return _keyring_set(env_name, api_key)
 
 SYSTEM_PROMPT = (
     "You are CodeLith, an AI mentor that blends coding assistance with "
@@ -96,9 +157,17 @@ def _load_dotenv(path: Path) -> None:
 
 
 def resolve_api_key() -> Optional[str]:
-    """Return the Groq API key, or None if it is not configured anywhere."""
+    """Return the Groq API key, or None if it is not configured anywhere.
+
+    Resolution order: env var → OS keyring → .env files.  Existing
+    setups (env var or .env) keep working unchanged; the keyring layer
+    is only consulted when those are empty.
+    """
     if os.environ.get(GROQ_API_KEY_ENV):
         return os.environ[GROQ_API_KEY_ENV].strip()
+    stored = _keyring_get(GROQ_API_KEY_ENV)
+    if stored:
+        return stored
     for path in ENV_FILES:
         _load_dotenv(path)
         key = os.environ.get(GROQ_API_KEY_ENV)
@@ -108,9 +177,15 @@ def resolve_api_key() -> Optional[str]:
 
 
 def resolve_agent_api_key() -> Optional[str]:
-    """Return the OpenRouter API key, or None if it is not configured anywhere."""
+    """Return the OpenRouter API key, or None if it is not configured anywhere.
+
+    Same resolution order as :func:`resolve_api_key`.
+    """
     if os.environ.get(OPENROUTER_API_KEY_ENV):
         return os.environ[OPENROUTER_API_KEY_ENV].strip()
+    stored = _keyring_get(OPENROUTER_API_KEY_ENV)
+    if stored:
+        return stored
     for path in ENV_FILES:
         _load_dotenv(path)
         key = os.environ.get(OPENROUTER_API_KEY_ENV)
@@ -154,10 +229,13 @@ def get_agent_client() -> OpenAI:
 
 def generate_reply(
     user_message: str,
-    model: str = DEFAULT_MODEL,
+    model: Optional[str] = None,
     history: Optional[list[dict]] = None,
 ) -> str:
     """Ask Groq for a reply to ``user_message`` using the CodeLith persona.
+
+    ``model`` defaults to the resolved *teaching* role model (env var >
+    ``config.toml`` > built-in default) when not given explicitly.
 
     ``history`` is an optional list of prior turns (``{"role", "content"}``
     dicts, oldest first) so follow-up questions keep their context.
@@ -165,6 +243,8 @@ def generate_reply(
     Never raises: a missing API key and API/network failures are converted
     into a readable message so the CLI keeps working without a key.
     """
+    if model is None:
+        model = get_model("teaching")
     api_key = resolve_api_key()
     if not api_key:
         return (
@@ -196,15 +276,20 @@ def grade_answer(
     answer: str,
     concept_name: str,
     concept_category: str = "",
-    model: str = DEFAULT_MODEL,
+    model: Optional[str] = None,
 ) -> dict[str, Any]:
     """Grade a learner's answer to a concept question via the LLM.
+
+    ``model`` defaults to the resolved *grading* role model (env var >
+    ``config.toml`` > built-in default) when not given explicitly.
 
     Returns ``{"correct": bool, "feedback": str}``.  Never raises: any
     failure (missing key, API error, unparseable output) is converted into
     a conservative result — the answer is graded as not-correct with a
     readable explanation, so a broken grader can never inflate progress.
     """
+    if model is None:
+        model = get_model("grading")
     api_key = resolve_api_key()
     if not api_key:
         return {

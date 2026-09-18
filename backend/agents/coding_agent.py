@@ -21,9 +21,10 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from backend.llm.client import (
     AGENT_MAX_TOKENS,
     resolve_agent_api_key,
-    resolve_agent_model,
+    resolve_agent_model,  # noqa: F401 (re-exported for backwards compat)
     get_agent_client,
 )
+from backend.llm.config import get_model
 from backend.orchestrator.events import emit_event
 
 # ---------------------------------------------------------------------------
@@ -397,7 +398,7 @@ def _create_with_retry(client: Any, api_messages: list[dict[str, Any]]) -> Any:
     for attempt in range(MAX_LLM_RETRIES + 1):
         try:
             return client.chat.completions.create(
-                model=resolve_agent_model(),
+                model=get_model("coding"),
                 messages=attempt_messages,
                 tools=TOOL_DEFINITIONS,
                 max_tokens=AGENT_MAX_TOKENS,

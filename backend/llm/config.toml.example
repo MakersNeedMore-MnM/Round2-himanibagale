@@ -1,0 +1,23 @@
+# CodeLith per-role model overrides (~/.codelith/config.toml).
+#
+# This file is OPTIONAL. CodeLith never creates it and works entirely
+# from built-in defaults without it. Copy this file to
+# ~/.codelith/config.toml only if you want to change models yourself,
+# or use: codelith config set <role> <provider/model>
+#
+# Resolution order per role: environment variable (CODELITH_MODEL_<ROLE>)
+# beats this file, which beats the built-in default.
+#
+# Roles are logical, not physical: several roles may point at the same
+# model, and any role you leave out simply keeps its built-in default.
+
+[models]
+# OpenRouter (coding/debug agents — needs native tool calling):
+#coding = "qwen/qwen3-coder-next"
+#debugging = "qwen/qwen3-coder-next"
+
+# Groq (teaching-side models):
+#teaching = "openai/gpt-oss-120b"
+#assessment = "openai/gpt-oss-120b"
+#grading = "openai/gpt-oss-120b"
+#detection = "openai/gpt-oss-120b"

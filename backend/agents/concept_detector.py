@@ -34,7 +34,8 @@ from backend.database.concepts import (
     file_scan_cached,
     get_cached_diagram,
 )
-from backend.llm.client import DEFAULT_MODEL, resolve_api_key, get_client
+from backend.llm.client import resolve_api_key, get_client
+from backend.llm.config import get_model
 
 # ---------------------------------------------------------------------------
 # Concept registry — known patterns and their short explanations
@@ -867,7 +868,7 @@ def _backfill_diagrams(concepts: list[DetectedConcept]) -> None:
     try:
         client = get_client()
         completion = client.chat.completions.create(
-            model=DEFAULT_MODEL,
+            model=get_model("detection"),
             messages=[{"role": "user", "content": prompt}],
             # gpt-oss spends most of its budget on reasoning tokens before
             # writing content — 1024 truncated the JSON mid-output
@@ -921,7 +922,7 @@ def _retry_categories(concepts: list[DetectedConcept]) -> None:
     try:
         client = get_client()
         completion = client.chat.completions.create(
-            model=DEFAULT_MODEL,
+            model=get_model("detection"),
             messages=[{"role": "user", "content": prompt}],
             max_completion_tokens=1024,
         )
@@ -993,7 +994,7 @@ def detect_concepts_with_llm(
     try:
         client = get_client()
         completion = client.chat.completions.create(
-            model=DEFAULT_MODEL,
+            model=get_model("detection"),
             messages=[{"role": "user", "content": prompt}],
             # Diagrams per concept make the output longer than plain
             # detection, so allow more completion tokens here.
