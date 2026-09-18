@@ -4,6 +4,7 @@ import argparse
 import json
 import queue
 import threading
+from pathlib import Path
 from typing import Optional
 
 import uvicorn
@@ -30,6 +31,14 @@ from backend.database.concepts import (
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
+
+# Built dashboard, shipped inside the package (frontend's Vite build
+# writes here directly — see frontend/vite.config.ts).  Anchored to
+# this module's location, never the process CWD: after `pip install
+# codelith` the daemon may be started from any directory, and a
+# relative "static" would either crash at startup or silently serve
+# the wrong folder.
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 app = FastAPI(title="CodeLith Daemon")
 
@@ -379,6 +388,26 @@ def answer_assessment(payload: Optional[AssessmentAnswer] = None) -> dict:
 def assessment_progress(session: str = "default") -> dict:
     """Return assessment performance summary."""
     return get_assessment_progress(session)
+
+
+# --- Dashboard static serving ----------------------------------------------
+
+# Mounted AFTER every API route so API paths always win, and only when
+# the built dashboard is present: a source checkout without `npm run
+# build` (or a dev workflow using the Vite server) runs API-only with
+# a logged note instead of crashing the daemon at import time.
+if STATIC_DIR.is_dir():
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="dashboard")
+else:
+    import sys
+
+    print(
+        "[codelith] dashboard build not found — running API-only. "
+        "Run `npm run build` in frontend/ to serve the dashboard from the daemon.",
+        file=sys.stderr,
+    )
 
 
 # --- Teaching endpoints (for dashboard) ------------------------------------

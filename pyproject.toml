@@ -21,3 +21,11 @@ codelith = "backend.cli.main:main"
 
 [tool.setuptools.packages.find]
 include = ["backend*"]
+
+# The built dashboard is part of the package: frontend's Vite build
+# writes backend/daemon/static (see frontend/vite.config.ts), and the
+# daemon serves it from there (see backend/daemon/server.py).  Without
+# package-data, setuptools ships only .py files and the wheel would
+# install without a dashboard.
+[tool.setuptools.package-data]
+"backend.daemon" = ["static/**/*"]
