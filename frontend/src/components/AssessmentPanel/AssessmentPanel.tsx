@@ -19,6 +19,9 @@ export default function AssessmentPanel({
   const [feedback, setFeedback] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  // Context (concept + source file) is tucked behind a toggle — shown
+  // only when the learner asks for it instead of crowding the question.
+  const [showContext, setShowContext] = useState(false)
 
   // Only the first unanswered question is surfaced at a time; the rest
   // stay queued in the backend and appear once earlier ones are answered.
@@ -125,21 +128,31 @@ export default function AssessmentPanel({
                 <span className="assessment-question">
                   {currentQuestion.question}
                 </span>
+                <button
+                  type="button"
+                  className="assessment-context-toggle"
+                  aria-expanded={showContext}
+                  onClick={() => setShowContext((v) => !v)}
+                >
+                  {showContext ? 'Hide context' : 'Show context'}
+                </button>
               </div>
             </div>
             <div className="accordion-body">
               <div className="assessment-body-content">
-                <div className="assessment-meta-row">
-                  <p className="assessment-meta">
-                    Concept: {currentQuestion.concept_name} (
-                    {currentQuestion.concept_category})
-                  </p>
-                  {currentQuestion.source_file && (
-                    <p className="assessment-source">
-                      Found in: {currentQuestion.source_file}
+                {showContext && (
+                  <div className="assessment-context">
+                    <p className="assessment-meta">
+                      Concept: {currentQuestion.concept_name} (
+                      {currentQuestion.concept_category})
                     </p>
-                  )}
-                </div>
+                    {currentQuestion.source_file && (
+                      <p className="assessment-source">
+                        Found in: {currentQuestion.source_file}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <textarea
                   value={answerInputs[currentQuestion.id] || ''}
                   onChange={(e) =>

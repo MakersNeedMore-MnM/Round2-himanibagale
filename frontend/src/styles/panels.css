@@ -348,67 +348,91 @@
   margin-bottom: 1.5rem;
 }
 
+/* Concept and its source file are hidden behind a toggle pinned to the
+ * question header's top-right corner; details flow at the top of the
+ * body only while expanded. flex:1 stretches the row across the header
+ * so space-between pins the toggle to the box edge, not the question. */
 .assessment-question-row {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 0.75rem;
 }
 
-.assessment-icon {
-  font-size: 1.125rem;
-  color: var(--color-warning);
+.assessment-context-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-default);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.assessment-question {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-primary);
+.assessment-context-toggle:hover,
+.assessment-context-toggle[aria-expanded='true'] {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-strong);
 }
 
-.assessment-body-content {
+.assessment-context {
   margin-top: 0.75rem;
 }
 
-.assessment-meta {
-  margin: 0.75rem 0 0.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  color: var(--color-text-muted);
+.assessment-context .assessment-meta {
+  margin-top: 0;
 }
 
-.assessment-source {
-  margin: 0 0 0.75rem;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-/* Concept and its source file share one line: concept left, source right. */
-.assessment-meta-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin: 0.75rem 0 0.75rem;
-}
-
-.assessment-meta-row .assessment-meta {
-  margin: 0;
-  flex-shrink: 0;
-}
-
-.assessment-meta-row .assessment-source {
-  margin: 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.assessment-context .assessment-source {
+  margin-bottom: 0;
 }
 
 .assessment-submit {
   margin-top: 0.5rem;
 }
 
+/* Ghost answer field: no box around the text, just a hairline underline
+ * on focus so the active field stays discoverable. Scoped to the
+ * assessment panel — the shared .textarea keeps its box elsewhere.
+ * Dark mode: underline off entirely per design; light theme re-adds it
+ * since a dark hairline reads fine on white surfaces. */
+.assessment-body-content .textarea {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 0.25rem 0;
+}
+
+/* Dark mode: drop the separator between the question header and the
+ * answer body so question + answer read as one surface. Light theme
+ * keeps the hairline. Scoped to the assessment panel — the other
+ * accordions (concepts, teachings) keep their divider. */
+.assessment-pending .accordion-body {
+  border-top-color: transparent;
+}
+
+[data-theme='light'] .assessment-pending .accordion-body {
+  border-top-color: var(--color-border-subtle);
+}
+
+/* Dark default: no divider between question and answer field at all. */
+.assessment-body-content .textarea:focus {
+  border-bottom-color: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+[data-theme='light'] .assessment-body-content .textarea:focus {
+  border-bottom-color: var(--color-border-strong);
+}
 .assessment-feedback {
   margin: 0.5rem 0;
   font-size: 0.8125rem;
