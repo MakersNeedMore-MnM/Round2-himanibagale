@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import CodeLithLogo from '../assets/logo.png'
+import CodeLithLogoDark from '../assets/logo_darkmode.png'
+import CodeLithLogoLight from '../assets/logo_lightmode.png'
 import ProgressPanel from '../components/ProgressPanel/ProgressPanel'
 import ConceptsList from '../components/ConceptsList/ConceptsList'
 import ChatWidget from '../components/ChatWidget/ChatWidget'
@@ -261,7 +262,11 @@ export default function Dashboard() {
       {/* ================= Top bar ================= */}
       <header className="cl-header">
         <div className="cl-header-brand">
-          <img src={CodeLithLogo} alt="CodeLith logo" className="cl-logo-tile" />
+          <img
+            src={theme === 'light' ? CodeLithLogoLight : CodeLithLogoDark}
+            alt="CodeLith logo"
+            className="cl-logo-tile"
+          />
         </div>
 
         <div className="cl-header-status">
