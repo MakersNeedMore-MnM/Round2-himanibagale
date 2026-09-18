@@ -7,7 +7,7 @@ export const site = {
   name: "CodeLith",
   tagline: "Build with AI. Understand what you build.",
 
-  githubUrl: "https://github.com/your-username/CodeLith",
+  githubUrl: "https://github.com/MakersNeedMore-MnM/Round2-himanibagale",
 
   /**
    * PyPI is not live yet — the UI renders the command without a link

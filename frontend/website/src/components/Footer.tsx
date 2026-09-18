@@ -13,7 +13,7 @@ export default function Footer() {
 
         <nav className="footer__links" aria-label="Footer">
           <a href={site.githubUrl} target="_blank" rel="noopener noreferrer">
-            GitHub
+            View on GitHub
           </a>
           {pypi ? (
             <a href={pypi} target="_blank" rel="noopener noreferrer">
