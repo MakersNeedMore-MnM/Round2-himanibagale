@@ -61,6 +61,41 @@ pip install mentor-ai
 mentor
 ```
 
+## Commands
+
+### In the terminal session
+
+Typed at the `>` prompt, after the banner:
+
+| Command | Effect |
+| --- | --- |
+| `exit`, `quit`, `q` | Leave the session — the daemon keeps running in the background |
+| `reset`, `clear`, `/reset` | Start a fresh conversation |
+| `mode` | Show the current mode and the available modes |
+| `mode <name>` | Switch mode — one of `learn`, `pair-programming`, `autonomous` |
+
+Anything else is sent to the agent. Mode changes made on the dashboard are
+picked up by the terminal automatically, and vice versa.
+
+### CLI subcommands
+
+| Command | Effect |
+| --- | --- |
+| `codelith` | Chat session: first-run key setup, daemon autostart, dashboard opens in the browser |
+| `codelith setup [groq\|openrouter]` | Enter or re-enter an API key (validated first, saved to the OS credential store) |
+| `codelith config show` | Show every model role and its resolved model |
+| `codelith config set <role> <model>` | Override one role's model (e.g. `coding`, `teaching`) |
+| `codelith config unset <role>` | Remove a role's override — back to the built-in default |
+
+### Daemon control
+
+| Command | Effect |
+| --- | --- |
+| `python -m backend.daemon.launcher start` | Start the daemon detached, if not already running |
+| `python -m backend.daemon.launcher status` | Show whether it runs, and on which port |
+| `python -m backend.daemon.launcher open` | Start it if needed, then open the dashboard in the browser |
+| `python -m backend.daemon.launcher stop` | Stop the daemon |
+
 ## Architecture
 
 CodeLith is a local three-process system: a CLI, a browser dashboard, and a
@@ -152,38 +187,79 @@ Two API keys are used, each from a different provider:
   grading, concept detection, and dashboard questions. Defaults to Groq's
   `openai/gpt-oss-120b`. Get a key at [console.groq.com/keys](https://console.groq.com/keys).
 - **`OPENROUTER_API_KEY`** — the coding and debug agents that read, write, and
-  edit files. Defaults to `qwen/qwen3-coder-next`; change it with
-  `CODELITH_AGENT_MODEL` (any OpenRouter slug, e.g.
-  `anthropic/claude-sonnet-4.5` for the strongest agentic coder, or any
-  `...:free` model). Get a key at [openrouter.ai/keys](https://openrouter.ai/keys).
+  edit files. Defaults to `qwen/qwen3-coder-next`. Get a key at [openrouter.ai/keys](https://openrouter.ai/keys).
 
-Keys are resolved from, in order: environment variables, a `.env` file in the
-project root, then a `.env` file in the daemon state directory (`~/.codelith/`).
-The files are re-read on every request, so adding a key takes effect
+Keys are resolved from, in order: environment variables, the OS credential
+store (when saved there via `codelith setup`), a `.env` file in the project
+root, then a `.env` file in the daemon state directory (`~/.codelith/`).
+The `.env` files are re-read on every request, so adding a key takes effect
 immediately — no daemon restart needed.
 
 ```bash
 # .env (project root, or ~/.codelith/.env for a machine-wide default)
 GROQ_API_KEY=gsk_...
 OPENROUTER_API_KEY=sk-or-...
-# Optional: pick a different coding-agent model
-# CODELITH_AGENT_MODEL=anthropic/claude-sonnet-4.5
 ```
+
+### Customizing models (optional)
+
+CodeLith ships with sensible models for every role and needs zero model
+configuration — nothing is created or asked at startup. If you *want* a
+different model for a role, set it explicitly:
+
+```bash
+codelith config                       # see every role and its resolved model
+codelith config set coding anthropic/claude-sonnet-4.5
+codelith config unset coding          # back to default
+```
+
+This writes `~/.codelith/config.toml` (created only by `config set` — never
+automatically):
+
+```toml
+[models]
+coding = "anthropic/claude-sonnet-4.5"
+teaching = "openai/gpt-oss-120b"   # same model for several roles is fine
+```
+
+Roles: `coding`, `debugging`, `teaching`, `assessment`, `grading`, `detection`.
+Any role you leave out keeps its built-in default. Changes take effect on the
+next request — no daemon restart. An environment variable
+(`CODELITH_MODEL_<ROLE>`, e.g. `CODELITH_MODEL_CODING`) overrides the file,
+which is handy in CI. See `backend/llm/config.toml.example` for a template.
 ### Controlling the daemon
 
 ```bash
 python -m backend.daemon.launcher start    # start detached if not running
 python -m backend.daemon.launcher status   # is it running, on which port
+python -m backend.daemon.launcher open     # start if needed, then open the dashboard
 python -m backend.daemon.launcher stop     # stop it
 ```
 
-### Frontend
+### Frontend (dashboard)
 
 ```bash
 cd frontend
 npm install
-npm run dev       # dev server with hot reload, proxies API calls to :8765
-npm run build     # production build, copied into the package's static folder
+npm run dev       # dev server with HMR on :5173, calls the daemon on :8765
+npm run build     # writes backend/daemon/static/ inside the Python package
+```
+
+The production build lands directly in `backend/daemon/static/` — no copy
+step. The daemon serves it automatically at `http://127.0.0.1:8765/` when
+present; without it, the daemon runs API-only (the Vite dev server and the
+dashboard keep working either way).
+
+### Landing page (website)
+
+The public landing page is a separate Next.js app under `frontend/website/`
+with no connection to the Python package or the daemon:
+
+```bash
+cd frontend/website
+npm install
+npm run dev       # http://localhost:3000
+npm run build     # static production build (deploy to Vercel with frontend/website as root)
 ```
 
 ### Tests

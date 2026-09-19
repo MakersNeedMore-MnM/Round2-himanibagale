@@ -129,8 +129,6 @@ _LOGO_GRADIENT = (
 ANSI_DIM = "\033[2m"
 ANSI_RESET = "\033[0m"
 
-TAGLINE = "an AI mentor that blends coding assistance with adaptive teaching"
-
 LOGO_ROWS = 6
 REVEAL_DELAY_SECONDS = 0.1
 
@@ -188,10 +186,6 @@ def print_banner() -> None:
                 print(f"{_LOGO_GRADIENT[row]}{line}{ANSI_RESET}")
             else:
                 print(line)
-    if colors:
-        print(f"{ANSI_DIM}{TAGLINE.center(width)}{ANSI_RESET}")
-    else:
-        print(TAGLINE.center(width))
     print()
 
 
@@ -465,8 +459,6 @@ def run_session(port: int) -> None:
 
     print(f"Workspace: {workspace}")
     print(f"Mode: {mode}")
-    print("Commands: exit/quit/q to leave, reset/clear to start fresh")
-    print("         mode <name> to switch mode (learn, pair-programming, autonomous)")
     print()
 
     # Keep the terminal in sync with mode changes made on the dashboard:
