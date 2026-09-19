@@ -7,10 +7,8 @@ The explanation+diagram prompts must branch on a concept's category:
 - ``api``        → sequenceDiagram (interaction shape)
 - ``data_model`` → erDiagram
 - ``decisions``  → flowchart (how the wired pieces connect)
-- ``abstract``   → NO diagram at all — prose-only explanation
-
-This is what fixes generic-looking diagrams: the model is told which
-Mermaid *type* fits the concept instead of choosing freely.
+- ``abstract``   → flowchart (small concept map — every category gets a
+  visual so web/styling-heavy code is not left prose-only)
 """
 
 from __future__ import annotations
@@ -46,8 +44,10 @@ class TestPromptsRouteDiagramTypeByCategory(unittest.TestCase):
         self.assertRegex(LLM_DETECT_PROMPT, r"api.*sequenceDiagram")
         self.assertRegex(LLM_DETECT_PROMPT, r"data_model.*erDiagram")
 
-    def test_detect_prompt_makes_abstract_prose_only(self) -> None:
-        self.assertRegex(LLM_DETECT_PROMPT, r"abstract[^\n]*\n[^\n]*no diagram|abstract.*prose-only")
+    def test_detect_prompt_routes_abstract_to_flowchart(self) -> None:
+        # Abstract concepts get a small concept-map flowchart (policy
+        # change: prose-only abstracts left web/styling notes empty).
+        self.assertRegex(LLM_DETECT_PROMPT, r'"abstract"\s*->\s*flowchart')
 
     def test_detect_prompt_offers_and_routes_decisions(self) -> None:
         # The architecture/integration category must be listed as an
@@ -66,8 +66,9 @@ class TestPromptsRouteDiagramTypeByCategory(unittest.TestCase):
         self.assertIn("decisions", DIAGRAM_BACKFILL_PROMPT)
 
 
-class TestAbstractConceptsAreProseOnly(unittest.TestCase):
-    """Genuinely abstract concepts must not carry a generated diagram."""
+class TestAbstractConceptsGetConceptMapDiagrams(unittest.TestCase):
+    """Abstract concepts carry a small concept-map flowchart like any
+    other category (policy change: they were prose-only before)."""
 
     def _client_with(self, responses: list[str]) -> tuple[mock.MagicMock, mock.MagicMock]:
         completions = mock.MagicMock()
@@ -81,7 +82,7 @@ class TestAbstractConceptsAreProseOnly(unittest.TestCase):
         client.chat.completions = completions
         return client, completions
 
-    def test_model_diagram_for_abstract_concept_is_stripped(self) -> None:
+    def test_model_diagram_for_abstract_concept_is_kept(self) -> None:
         response = json.dumps([
             {"name": "Separation of Concerns", "category": "abstract",
              "description": "Splitting a program into distinct sections.",
@@ -93,25 +94,22 @@ class TestAbstractConceptsAreProseOnly(unittest.TestCase):
             detected = detect_concepts_with_llm("x.py", "code", set())
         self.assertEqual(len(detected), 1)
         self.assertEqual(detected[0].category, "abstract")
-        self.assertEqual(
-            detected[0].diagram, "",
-            "abstract concepts must be prose-only — diagram must be stripped",
-        )
-        # No backfill call may chase a diagram for an abstract concept.
+        self.assertIn("flowchart", detected[0].diagram)
         self.assertEqual(completions.create.call_count, 1)
 
-    def test_abstract_concept_without_diagram_skips_backfill(self) -> None:
+    def test_abstract_concept_without_diagram_gets_backfill(self) -> None:
         response = json.dumps([
             {"name": "Error Handling", "category": "abstract",
              "description": "Graceful failure paths.", "diagram": ""},
         ])
-        client, completions = self._client_with([response])
+        backfill = json.dumps({"Error Handling": "flowchart TD\n    A[Raise] --> B[Catch]"})
+        client, completions = self._client_with([response, backfill])
         with mock.patch("backend.agents.concept_detector.resolve_api_key", return_value="k"), \
              mock.patch("backend.agents.concept_detector.get_client", return_value=client):
             detected = detect_concepts_with_llm("x.py", "code", set())
         self.assertEqual(len(detected), 1)
-        self.assertEqual(detected[0].diagram, "")
-        self.assertEqual(completions.create.call_count, 1, "no backfill for abstract")
+        self.assertIn("flowchart", detected[0].diagram)
+        self.assertEqual(completions.create.call_count, 2, "abstract is backfilled too now")
 
     def test_concrete_concept_without_diagram_still_gets_backfill(self) -> None:
         response = json.dumps([
