@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Problem from "@/components/Problem";
+import MasterySection from "@/components/MasterySection";
 import HowItWorks from "@/components/HowItWorks";
 import Demo from "@/components/Demo";
 import DashboardPreview from "@/components/DashboardPreview";
@@ -15,6 +16,7 @@ export default function Page() {
       <main>
         <Hero />
         <Problem />
+        <MasterySection />
         <HowItWorks />
         <Demo />
         <DashboardPreview />

@@ -35,33 +35,6 @@ export default function GetStarted() {
           <h2 className="section-title">Four steps from install to insight.</h2>
         </div>
 
-        <div className="start__terminal" role="img" aria-label="Install and run CodeLith">
-          <div className="start__titlebar">
-            <span className="demo__dot" aria-hidden="true" />
-            <span className="demo__dot" aria-hidden="true" />
-            <span className="demo__dot" aria-hidden="true" />
-          </div>
-          <div className="start__body">
-            <p>
-              <span className="start__prompt">$</span>
-              <span className="start__cmd">{site.installCommand}</span>
-            </p>
-            <p>
-              <span className="start__prompt">$</span>
-              <span className="start__cmd">codelith</span>
-            </p>
-            <p className="start__out">
-              ┌─────────────────────────────────────────────┐
-            </p>
-            <p className="start__out">
-              │&nbsp;&nbsp;C O D E L I T H&nbsp;&nbsp;—&nbsp;&nbsp;local AI mentor session&nbsp;&nbsp;│
-            </p>
-            <p className="start__out">
-              └─────────────────────────────────────────────┘
-            </p>
-          </div>
-        </div>
-
         <ol className="start__steps">
           {STEPS.map((step) => (
             <li key={step.n} className="start__step">

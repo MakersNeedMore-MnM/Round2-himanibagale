@@ -54,6 +54,58 @@ function InstallCommand() {
   );
 }
 
+function DashboardMiniPreview() {
+  return (
+    <div className="hero-dashboard" aria-label="Animated dashboard preview">
+      <div className="hero-dashboard__bar">
+        <span className="hero-dashboard__traffic" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="hero-dashboard__title">codelith / learning session</span>
+        <span className="hero-dashboard__status">
+          <span className="hero-dashboard__status-dot" /> live
+        </span>
+      </div>
+
+      <div className="hero-dashboard__body">
+        <div className="hero-dashboard__activity">
+          <div className="hero-dashboard__eyebrow">Agent activity</div>
+          <div className="hero-dashboard__activity-line">
+            <span className="hero-dashboard__pulse" />
+            Reading auth/routes.py
+          </div>
+          <div className="hero-dashboard__activity-line hero-dashboard__activity-line--muted">
+            <span className="hero-dashboard__check">&#10003;</span>
+            Tests passed · 4 concepts found
+          </div>
+          <div className="hero-dashboard__progress">
+            <span />
+          </div>
+        </div>
+
+        <div className="hero-dashboard__concept">
+          <div className="hero-dashboard__eyebrow">New concept detected</div>
+          <strong>Dependency Injection</strong>
+          <p>Explained from the code the agent just changed.</p>
+          <div className="hero-dashboard__concept-footer">
+            <span>Visual explanation ready</span>
+            <span className="hero-dashboard__spark">&#10022;</span>
+          </div>
+        </div>
+
+        <div className="hero-dashboard__assessment">
+          <div className="hero-dashboard__eyebrow">Assessment queue</div>
+          <strong>1 question ready</strong>
+          <p>Why does this make testing easier?</p>
+          <span className="hero-dashboard__answer-line" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Hero() {
   return (
     <section className="hero" id="top">
@@ -64,17 +116,16 @@ export default function Hero() {
         </span>
 
         <h1 className="hero__title">
-          Build with AI.
+          A coding agent
           <br />
-          <span className="text-gradient">Understand what you build.</span>
+          <span className="text-gradient">that teaches you what it builds.</span>
         </h1>
 
         <p className="hero__sub">
           CodeLith is an open-source AI coding agent that builds software with
           you — and while it works, it identifies the programming concepts
           appearing in the implementation and turns them into explanations,
-          diagrams, and questions on your dashboard. Generate code
-          <em> and </em> learn it.
+          diagrams, and questions on your dashboard.
         </p>
 
         <div className="hero__actions">
@@ -87,9 +138,6 @@ export default function Hero() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <svg className="icon-star" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 2l2.9 6.26L21.5 9.27l-4.75 4.4 1.15 6.83L12 17.27l-5.9 3.23 1.15-6.83L2.5 9.27l6.6-1.01L12 2z" />
-            </svg>
             View on GitHub
           </a>
         </div>
@@ -100,6 +148,8 @@ export default function Hero() {
           Runs locally against Groq and OpenRouter — your keys, your machine,
           your session state.
         </p>
+
+        <DashboardMiniPreview />
       </div>
     </section>
   );
