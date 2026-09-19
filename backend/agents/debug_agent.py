@@ -11,7 +11,6 @@ focused on debugging and a capped retry count to avoid infinite loops.
 
 from __future__ import annotations
 
-import json
 import os
 from typing import Any
 
@@ -23,10 +22,13 @@ from backend.agents.coding_agent import (
     MAX_WRITE_SIZE,
     COMMAND_TIMEOUT,
     TOOL_DEFINITIONS,
+    _create_with_retry,
+    _parse_tool_args,
     _read_file,
     _write_file,
     _edit_file,
     _run_command,
+    workspace_context,
 )
 from backend.llm.client import (
     AGENT_MAX_TOKENS,
@@ -71,9 +73,10 @@ def debug_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     except ValueError as exc:
         return {"messages": messages + [AIMessage(content=str(exc))]}
 
-    # Build the conversation.
+    # Build the conversation.  The ENVIRONMENT block grounds the agent in
+    # the real workspace root and shell, like the coding agent.
     api_messages: list[dict[str, Any]] = [
-        {"role": "system", "content": SYSTEM_PROMPT}
+        {"role": "system", "content": SYSTEM_PROMPT + workspace_context(workspace_root)}
     ]
     for msg in messages:
         if isinstance(msg, HumanMessage):
@@ -84,12 +87,7 @@ def debug_agent_node(state: dict[str, Any]) -> dict[str, Any]:
     # Tool-use loop — same as coding agent but scoped to debugging.
     for _ in range(MAX_TOOL_ROUNDS):
         try:
-            completion = client.chat.completions.create(
-                model=get_model("debugging"),
-                messages=api_messages,
-                tools=TOOL_DEFINITIONS,
-                max_tokens=AGENT_MAX_TOKENS,
-            )
+            completion = _create_with_retry(client, api_messages)
         except Exception as exc:
             reply_text = f"(LLM error: {exc})"
             return {"messages": messages + [AIMessage(content=reply_text)]}
@@ -118,36 +116,37 @@ def debug_agent_node(state: dict[str, Any]) -> dict[str, Any]:
             for tool_call in message.tool_calls:
                 fn = tool_call.function
 
-                try:
-                    args = json.loads(fn.arguments)
-                except (json.JSONDecodeError, TypeError):
-                    result = "Error: could not parse tool arguments."
+                args = _parse_tool_args(fn.arguments)
+                if not args:
+                    result = (
+                        f"Error: could not parse arguments for '{fn.name}' "
+                        "as JSON. Re-emit the tool call with valid JSON arguments."
+                    )
+                elif fn.name == "read_file":
+                    result = _read_file(
+                        args.get("file_path", ""),
+                        workspace_root,
+                    )
+                elif fn.name == "write_file":
+                    result = _write_file(
+                        args.get("file_path", ""),
+                        args.get("content", ""),
+                        workspace_root,
+                    )
+                elif fn.name == "edit_file":
+                    result = _edit_file(
+                        args.get("file_path", ""),
+                        args.get("old_string", ""),
+                        args.get("new_string", ""),
+                        workspace_root,
+                    )
+                elif fn.name == "run_command":
+                    result, _exit_code, _stderr_present = _run_command(
+                        args.get("command", ""),
+                        workspace_root,
+                    )
                 else:
-                    if fn.name == "read_file":
-                        result = _read_file(
-                            args.get("file_path", ""),
-                            workspace_root,
-                        )
-                    elif fn.name == "write_file":
-                        result = _write_file(
-                            args.get("file_path", ""),
-                            args.get("content", ""),
-                            workspace_root,
-                        )
-                    elif fn.name == "edit_file":
-                        result = _edit_file(
-                            args.get("file_path", ""),
-                            args.get("old_string", ""),
-                            args.get("new_string", ""),
-                            workspace_root,
-                        )
-                    elif fn.name == "run_command":
-                        result, _exit_code, _stderr_present = _run_command(
-                            args.get("command", ""),
-                            workspace_root,
-                        )
-                    else:
-                        result = f"Error: unknown tool '{fn.name}'."
+                    result = f"Error: unknown tool '{fn.name}'."
 
                 api_messages.append(
                     {

@@ -49,7 +49,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "Read a file's contents.",
+            "description": "Read a file's contents. file_path is relative to the workspace root.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -64,7 +64,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "write_file",
-            "description": "Create or overwrite a file.",
+            "description": "Create or overwrite a file. file_path is RELATIVE to the workspace root; parent directories are created automatically.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -80,7 +80,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "edit_file",
-            "description": "Replace text in a file.",
+            "description": "Replace text in a file. file_path is relative to the workspace root.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -97,7 +97,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "run_command",
-            "description": "Execute a shell command.",
+            "description": "Execute a shell command with the workspace root as the working directory. Must be valid for the machine's shell (see ENVIRONMENT).",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -131,26 +131,112 @@ BACKGROUND_COMMANDS = {
 MAX_OUTPUT_SIZE = 50_000  # chars – guard against huge command output
 
 
+# ---------------------------------------------------------------------------
+# Path resolution — one sandboxed resolver shared by all file tools
+# ---------------------------------------------------------------------------
+
+def _path_error(file_path: str, root: Path) -> str:
+    """Actionable rejection: name the root and how to address files in it."""
+    return (
+        f"Error: path '{file_path}' is outside the workspace. "
+        f"The workspace root is {root}. Pass file_path RELATIVE to the "
+        "workspace root, e.g. 'index.html' or 'my-folder/index.html'."
+    )
+
+
+def _resolve_in_workspace(file_path: str, workspace_root: str) -> tuple[Path | None, str | None]:
+    """Resolve *file_path* to a real path inside *workspace_root*.
+
+    Returns ``(path, None)`` on success or ``(None, error)`` when the path
+    cannot be sandboxed.  Models regularly hallucinate host-specific paths
+    (``/home/user/...``, ``C:/Users/<someone>/...``, ``~/...``) because they
+    are never told the workspace location, so the resolver forgives what it
+    can:
+
+    - ``~/...`` and POSIX-style ``/...`` paths are rebased into the
+      workspace as relative paths;
+    - surrounding quotes and whitespace are stripped;
+    - true Windows absolute paths (``C:/...``) are kept only when they
+      already point inside the workspace.
+
+    Every rejection message names the workspace root so the model can
+    self-correct within the same turn instead of thrashing across rounds.
+    """
+    raw = (file_path or "").strip().strip('"').strip("'").strip()
+    if not raw:
+        return None, "Error: file path must not be empty."
+
+    root = Path(workspace_root).resolve()
+
+    if raw.startswith("~"):
+        # ``~/x`` or ``~\x`` — the agent cannot see the user's home, so
+        # interpret it as workspace-relative.
+        target = root / raw[1:].lstrip("/\\")
+    else:
+        p = Path(raw)
+        if p.is_absolute() or raw.startswith(("/", "\\")):
+            if p.drive:
+                # Real Windows absolute path (C:\...) — keep it; the
+                # containment check below decides whether it is allowed.
+                target = p
+            else:
+                # POSIX-style root path (/home/user/...) — the driveless
+                # anchor is '/', so strip it and rebase into the workspace
+                # instead of rejecting outright.
+                target = root / p.relative_to(p.anchor)
+        else:
+            target = root / p
+
+    try:
+        target = target.resolve()
+    except (OSError, ValueError) as exc:
+        return None, f"Error resolving path: {exc}"
+
+    if not target.is_relative_to(root):
+        return None, _path_error(raw, root)
+    return target, None
+
+
+def _shell_context() -> str:
+    """One-line description of the shell run_command executes in."""
+    if os.name == "nt":
+        return (
+            "Windows cmd.exe. Use cmd syntax: `mkdir <dir>` (never "
+            "`mkdir -p`), `type <file>` to print a file, `del` to delete."
+        )
+    return "POSIX bash — standard Unix commands work."
+
+
+def workspace_context(workspace_root: str) -> str:
+    """ENVIRONMENT block appended to agent prompts.
+
+    The agent previously had no idea where it was running, so it invented
+    ``/home/user/...`` paths (rejected by the sandbox) and Unix flags on
+    cmd.exe (creating junk folders).  This block grounds every call.
+    """
+    return (
+        "\n\n## ENVIRONMENT\n"
+        f"- Workspace root (the ONLY directory you may read or write): "
+        f"{Path(workspace_root).resolve()}\n"
+        "- ALWAYS pass file_path RELATIVE to the workspace root, e.g. "
+        "'index.html' or 'himani-website/index.html'. NEVER invent "
+        "absolute paths, usernames, or /home/... paths.\n"
+        f"- Shell: {_shell_context()}\n"
+        "- Commands run with the workspace root as the working directory; "
+        "do not cd outside it.\n"
+    )
+
+
 def _read_file(file_path: str, workspace_root: str) -> str:
     """Read *file_path* relative to *workspace_root*.
 
     Returns the file contents as a string, or an error message if the file
     cannot be read.
     """
-    root = Path(workspace_root).resolve()
-    target = Path(file_path)
-
-    # If the path is not absolute, resolve it relative to the workspace root.
-    if not target.is_absolute():
-        target = root / target
-
-    # Safety: ensure the resolved path is still under the workspace root.
-    try:
-        target = target.resolve()
-        if not str(target).startswith(str(root)):
-            return f"Error: path '{file_path}' is outside the project root."
-    except (OSError, ValueError) as exc:
-        return f"Error resolving path: {exc}"
+    target, error = _resolve_in_workspace(file_path, workspace_root)
+    if error:
+        return error
+    assert target is not None  # for type checkers
 
     try:
         size = target.stat().st_size
@@ -180,25 +266,21 @@ def _write_file(file_path: str, content: str, workspace_root: str) -> str:
             f"exceeding the {MAX_WRITE_SIZE:,} byte limit."
         )
 
-    root = Path(workspace_root).resolve()
-    target = Path(file_path)
-
-    if not target.is_absolute():
-        target = root / target
-
-    try:
-        target = target.resolve()
-        if not str(target).startswith(str(root)):
-            return f"Error: path '{file_path}' is outside the project root."
-    except (OSError, ValueError) as exc:
-        return f"Error resolving path: {exc}"
+    target, error = _resolve_in_workspace(file_path, workspace_root)
+    if error:
+        return error
+    assert target is not None  # for type checkers
 
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
-        return f"Successfully wrote {len(content):,} chars to {file_path}"
     except OSError as exc:
         return f"Error writing file: {exc}"
+    try:
+        shown = target.relative_to(Path(workspace_root).resolve()).as_posix()
+    except ValueError:
+        shown = str(target)
+    return f"Successfully wrote {len(content):,} chars to {shown}"
 
 
 def _edit_file(
@@ -215,18 +297,10 @@ def _edit_file(
     if not old_string:
         return "Error: old_string must not be empty."
 
-    root = Path(workspace_root).resolve()
-    target = Path(file_path)
-
-    if not target.is_absolute():
-        target = root / target
-
-    try:
-        target = target.resolve()
-        if not str(target).startswith(str(root)):
-            return f"Error: path '{file_path}' is outside the project root."
-    except (OSError, ValueError) as exc:
-        return f"Error resolving path: {exc}"
+    target, error = _resolve_in_workspace(file_path, workspace_root)
+    if error:
+        return error
+    assert target is not None  # for type checkers
 
     try:
         original = target.read_text(encoding="utf-8", errors="replace")
@@ -255,11 +329,13 @@ def _edit_file(
 
     try:
         target.write_text(updated, encoding="utf-8")
-        return (
-            f"Successfully replaced {count} occurrence(s) in {file_path}."
-        )
     except OSError as exc:
         return f"Error writing file: {exc}"
+    try:
+        shown = target.relative_to(Path(workspace_root).resolve()).as_posix()
+    except ValueError:
+        shown = str(target)
+    return f"Successfully replaced {count} occurrence(s) in {shown}."
 
 
 def _is_background_command(command: str) -> bool:
@@ -517,7 +593,11 @@ def coding_agent_node(state: dict[str, Any]) -> dict[str, Any]:
 
     # Mode-specific behavior: system prompt suffix and tool-round budget.
     mode_config: dict[str, Any] = state.get("current_mode_config") or {}
-    system_prompt = SYSTEM_PROMPT + mode_config.get("prompt_suffix", "")
+    system_prompt = (
+        SYSTEM_PROMPT
+        + mode_config.get("prompt_suffix", "")
+        + workspace_context(workspace_root)
+    )
     max_tool_rounds = int(mode_config.get("max_tool_rounds", MAX_TOOL_ROUNDS))
 
     api_key = resolve_agent_api_key()
