@@ -81,7 +81,7 @@ picked up by the terminal automatically, and vice versa.
 
 | Command | Effect |
 | --- | --- |
-| `codelith` | Chat session: first-run key setup, daemon autostart, dashboard opens in the browser |
+| `codelith` | Chat session: first-run key setup, daemon autostart, dashboard link — opens in the browser after a short pause |
 | `codelith setup [groq\|openrouter]` | Enter or re-enter an API key (validated first, saved to the OS credential store) |
 | `codelith config show` | Show every model role and its resolved model |
 | `codelith config set <role> <model>` | Override one role's model (e.g. `coding`, `teaching`) |

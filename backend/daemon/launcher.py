@@ -124,7 +124,9 @@ def start() -> tuple[int, int, bool]:
     accepting connections): if something healthy answers on the dashboard
     port, reuse it instead of starting a second daemon. A stale pid file
     pointing at a dead process — or at a port nobody listens on — must
-    never cause a duplicate daemon.
+    never cause a duplicate daemon. Quiet on the already-running paths;
+    callers decide what to show the user (the CLI prints a dashboard
+    link instead of daemon bookkeeping).
 
     Returns ``(pid, port, started_now)``; ``pid`` is ``None`` for an
     adopted daemon this process did not spawn.
@@ -132,17 +134,12 @@ def start() -> tuple[int, int, bool]:
     running = state.is_running()
     if running:
         pid, port = running
-        print(f"Daemon already running (pid {pid}, port {port}).")
         return pid, port, False
 
     # Something already serves the dashboard port (e.g. a daemon started
     # elsewhere, with pid state this install can't see) → adopt it rather
     # than spawn a rival that would lose the port race anyway.
     if state.port_open(DEFAULT_PORT):
-        print(
-            f"Port {DEFAULT_PORT} is already serving the dashboard; "
-            "reusing it instead of starting a second daemon."
-        )
         return None, DEFAULT_PORT, False
 
     # Clear stale state left behind by a crashed or stopped daemon.
@@ -157,7 +154,6 @@ def start() -> tuple[int, int, bool]:
             f"Daemon failed to become ready within {READY_TIMEOUT_SECONDS:.0f}s; "
             f"see {state.state_dir() / 'daemon.log'}"
         )
-    print(f"Daemon started (pid {proc.pid}, port {port}).")
     return proc.pid, port, True
 
 
@@ -225,7 +221,15 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     if args.command == "start":
-        start()
+        pid, port, started = start()
+        # Bookkeeping belongs in this explicit management entrypoint; the
+        # chat flow (cli.main) prints a dashboard link instead.
+        if started:
+            print(f"Daemon started (pid {pid}, port {port}).")
+        elif pid is not None:
+            print(f"Daemon already running (pid {pid}, port {port}).")
+        else:
+            print(f"Port {port} is already serving the dashboard; reusing it.")
     elif args.command == "status":
         status()
     elif args.command == "stop":

@@ -34,8 +34,11 @@ def no_state(monkeypatch):
 
 
 def test_start_adopts_daemon_already_on_default_port(no_state, monkeypatch, capsys):
-    """Port 8765 answering + no usable pid state → adopt, never spawn."""
-    opened_ports: list[int] = []
+    """Port 8765 answering + no usable pid state → adopt, never spawn.
+
+    Adoption is silent: the CLI decides what to show (a dashboard link,
+    not daemon bookkeeping).
+    """
 
     def _fail_spawn(port):
         raise AssertionError("a second daemon must not be started")
@@ -45,10 +48,24 @@ def test_start_adopts_daemon_already_on_default_port(no_state, monkeypatch, caps
 
     pid, port, started = launcher.start()
 
-    assert pid is None
-    assert port == launcher.DEFAULT_PORT
-    assert started is False
-    assert "reusing it" in capsys.readouterr().out
+    assert (pid, port, started) == (None, launcher.DEFAULT_PORT, False)
+    assert capsys.readouterr().out == ""
+
+
+def test_start_is_quiet_when_pid_state_is_valid(no_state, monkeypatch, capsys):
+    """Healthy pid file + answering port → reuse silently, never spawn."""
+
+    def _fail_spawn(port):
+        raise AssertionError("a second daemon must not be started")
+
+    monkeypatch.setattr(launcher.state, "is_running", lambda: (17424, 8765))
+    monkeypatch.setattr(launcher.state, "port_open", _fail_spawn)
+    monkeypatch.setattr(launcher, "_start_detached", _fail_spawn)
+
+    pid, port, started = launcher.start()
+
+    assert (pid, port, started) == (17424, 8765, False)
+    assert capsys.readouterr().out == ""
 
 
 def test_start_starts_detached_and_waits_until_ready(no_state, monkeypatch):
@@ -75,6 +92,7 @@ def test_start_starts_detached_and_waits_until_ready(no_state, monkeypatch):
 
 def test_start_fails_loudly_when_never_ready(no_state, monkeypatch):
     """Daemon not ready within timeout → clear error, no browser, exit != 0."""
+    opened_ports: list[int] = []
     monkeypatch.setattr(launcher.state, "port_open", lambda port, host=...: False)
     monkeypatch.setattr(launcher, "_find_free_port", lambda host=..., preferred=...: launcher.DEFAULT_PORT)
 
@@ -83,10 +101,7 @@ def test_start_fails_loudly_when_never_ready(no_state, monkeypatch):
 
     monkeypatch.setattr(launcher, "_start_detached", lambda port: FakeProc())
     monkeypatch.setattr(launcher, "_wait_until_ready", lambda port, timeout=None: False)
-    opened = monkeypatch.setattr(
-        launcher, "open_dashboard", lambda port: opened_ports.append(port) or True
-    )
-    opened_ports: list[int] = []
+    monkeypatch.setattr(launcher, "open_dashboard", lambda port: opened_ports.append(port))
 
     with pytest.raises(SystemExit, match="failed to become ready"):
         launcher.start()
@@ -115,10 +130,19 @@ def test_open_dashboard_swallows_browser_errors(monkeypatch):
     assert launcher.open_dashboard(8765) is False
 
 
-def test_cli_plain_invocation_opens_dashboard_after_start(monkeypatch, capsys):
-    """`codelith` (no subcommand) → daemon start → dashboard opened with its port."""
+def test_cli_plain_invocation_prints_link_and_schedules_browser(monkeypatch, capsys):
+    """`codelith` (no subcommand) → daemon up → link printed now, browser
+    opens on a short delay so the welcome screen settles first."""
     started: list[int] = []
-    opened: list[int] = []
+    timers: list[tuple[float, int]] = []
+
+    class FakeTimer:
+        def __init__(self, delay, fn, args=()):
+            self._delay, self._fn, self._args = delay, fn, args
+            self.daemon = False
+
+        def start(self):
+            timers.append((self._delay, self._args[0]))
 
     monkeypatch.setattr(
         "backend.llm.key_setup.ensure_keys_at_startup", lambda: None
@@ -127,11 +151,13 @@ def test_cli_plain_invocation_opens_dashboard_after_start(monkeypatch, capsys):
     monkeypatch.setattr(
         launcher, "start", lambda: started.append(4242) or (4242, 8765, True)
     )
-    monkeypatch.setattr(launcher, "open_dashboard", lambda port: opened.append(port))
+    monkeypatch.setattr(cli_main.threading, "Timer", FakeTimer)
     monkeypatch.setattr(cli_main, "run_session", lambda port: None)
 
     rc = cli_main.main([])
 
     assert rc == 0
     assert started == [4242]  # launcher.start ran first
-    assert opened == [8765]  # then the browser, with the daemon's port
+    assert "Dashboard live at http://localhost:8765/" in capsys.readouterr().out
+    # Browser open scheduled, delayed, with the daemon's port.
+    assert timers == [(cli_main.DASHBOARD_OPEN_DELAY_SECONDS, 8765)]

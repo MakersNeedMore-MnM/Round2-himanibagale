@@ -450,6 +450,9 @@ def _streaming_turn(
     return result if result is not None else {"message": "", "session": session, "concepts": [], "teaching": ""}
 
 
+DASHBOARD_OPEN_DELAY_SECONDS = 2.5  # let the welcome screen settle first
+
+
 def run_session(port: int) -> None:
     """Print the banner and loop until the user exits."""
     workspace = os.getcwd()
@@ -578,10 +581,19 @@ def main(argv: Optional[list[str]] = None) -> int:
     except SystemExit as exc:
         print(f"Could not start the daemon: {exc}", file=sys.stderr)
         return 1
-    # The dashboard is confirmed serving now (start() polls /health before
-    # returning) — open it in the default browser so concepts, assessments
-    # and diagrams are visible while the chat session runs in the terminal.
-    launcher.open_dashboard(port)
+    # The daemon is confirmed serving now (start() polls /health before
+    # returning).  Print a clickable link immediately, then open the
+    # browser a couple of seconds later — a window yanked open instantly
+    # can startle first-timers, and the pause lets the welcome screen
+    # settle first.  The timer runs in a daemon thread: quitting before
+    # it fires must never block exit.
+    print(f"Dashboard live at http://localhost:{port}/")
+    _dashboard_timer = threading.Timer(
+        DASHBOARD_OPEN_DELAY_SECONDS, launcher.open_dashboard, args=(port,)
+    )
+    _dashboard_timer.daemon = True
+    _dashboard_timer.start()
+    print("Paste this URL in your browser to see the dashboard.")
     try:
         run_session(port)
     except KeyboardInterrupt:
