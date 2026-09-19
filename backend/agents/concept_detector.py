@@ -776,8 +776,8 @@ matches the concept's category — this routing is required:
 - "data_model" -> erDiagram (entities with attributes and relations)
 - "decisions"  -> flowchart (how the pieces connect: feature -> tool
   or service -> data store), few nodes, one arrow per real connection
-- "abstract"   -> "" (no diagram: the explanation is prose-only; do NOT
-  invent one for abstract concepts)
+- "abstract"   -> flowchart (a small concept map: the idea at the center,
+  what it touches or enables around it)
 Aim for 3-6 nodes.  Use simple ASCII labels, wrap each
 label in square brackets (e.g. A[Label]), and never put parentheses or special
 characters inside labels.
@@ -813,8 +813,9 @@ Concepts needing a category:
 DIAGRAM_BACKFILL_PROMPT = """\For each concept below, produce ONE small, valid Mermaid diagram whose
 TYPE matches the concept's category — flowchart for algorithm and
 decisions (the latter showing how the wired pieces connect),
-classDiagram for structure, sequenceDiagram for api, and erDiagram for
-data_model.  Aim for 3-6 nodes.  Use simple ASCII labels, wrap each
+classDiagram for structure, sequenceDiagram for api, erDiagram for
+data_model, and a simple concept-map flowchart for abstract.  Aim for
+3-6 nodes.  Use simple ASCII labels, wrap each
 label in square brackets (e.g. A[Label]), and never put parentheses or special
 characters inside labels.  erDiagram relation labels with spaces MUST
 be quoted, e.g. ``OperatorMap ||--o{{ Function : "maps to"``.
@@ -853,9 +854,6 @@ def _backfill_diagrams(concepts: list[DetectedConcept]) -> None:
     if not api_key:
         return
 
-    # Abstract concepts are prose-only by design — never backfill a
-    # diagram for them.
-    concepts = [c for c in concepts if c.category != "abstract"]
     if not concepts:
         return
 
@@ -1052,10 +1050,7 @@ def detect_concepts_with_llm(
                     raw_label if raw_label and raw_label.lower() != category else ""
                 ),
                 source_file=file_path,
-                # Abstract concepts are prose-only: strip any diagram the
-                # model emitted anyway so the dashboard never renders a
-                # generic one for a genuinely abstract idea.
-                diagram=("" if category == "abstract" else diagram),
+                diagram=diagram,
                 decision=decision,
             )
         )
@@ -1073,21 +1068,17 @@ def detect_concepts_with_llm(
     # is unchanged reuses its stored diagram instead of a backfill call.
     if code_hash:
         for c in valid:
-            if c.category != "abstract" and (
-                not c.diagram or not is_valid_mermaid(c.diagram)
-            ):
+            if not c.diagram or not is_valid_mermaid(c.diagram):
                 cached = get_cached_diagram(session, concept_slug(c.name), code_hash)
                 if cached:
                     c.diagram = cached
 
     # Models sometimes skip the diagram field or emit malformed Mermaid —
     # recover both with one focused follow-up call before giving up on a
-    # visual.  Abstract concepts stay prose-only and are excluded from
-    # backfill.
+    # visual.  Every category may carry a diagram, including abstract.
     missing = [
         c for c in valid
-        if c.category != "abstract"
-        and (not c.diagram or not is_valid_mermaid(c.diagram))
+        if not c.diagram or not is_valid_mermaid(c.diagram)
     ]
     if missing:
         _backfill_diagrams(missing)

@@ -390,27 +390,12 @@ def assessment_progress(session: str = "default") -> dict:
     return get_assessment_progress(session)
 
 
-# --- Dashboard static serving ----------------------------------------------
-
-# Mounted AFTER every API route so API paths always win, and only when
-# the built dashboard is present: a source checkout without `npm run
-# build` (or a dev workflow using the Vite server) runs API-only with
-# a logged note instead of crashing the daemon at import time.
-if STATIC_DIR.is_dir():
-    from fastapi.staticfiles import StaticFiles
-
-    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="dashboard")
-else:
-    import sys
-
-    print(
-        "[codelith] dashboard build not found — running API-only. "
-        "Run `npm run build` in frontend/ to serve the dashboard from the daemon.",
-        file=sys.stderr,
-    )
-
-
 # --- Teaching endpoints (for dashboard) ------------------------------------
+# NOTE: these must stay ABOVE the catch-all static mount at the bottom
+# of this module.  FastAPI matches routes in registration order, so a
+# mount registered first shadows every route defined after it — GET
+# /teachings silently 404'd that way and diagrams vanished from the
+# dashboard (see tests/daemon/test_route_order.py).
 
 
 @app.get("/teachings")
@@ -429,6 +414,26 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             await websocket.send_text(message)
     except WebSocketDisconnect:
         pass
+
+
+# --- Dashboard static serving (always LAST) --------------------------------
+
+# Mounted AFTER every API route so API paths always win, and only when
+# the built dashboard is present: a source checkout without `npm run
+# build` (or a dev workflow using the Vite server) runs API-only with
+# a logged note instead of crashing the daemon at import time.
+if STATIC_DIR.is_dir():
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="dashboard")
+else:
+    import sys
+
+    print(
+        "[codelith] dashboard build not found — running API-only. "
+        "Run `npm run build` in frontend/ to serve the dashboard from the daemon.",
+        file=sys.stderr,
+    )
 
 
 def run(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None:

@@ -71,6 +71,11 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
+:root:not([data-theme='light']) .mode-btn:not(.mode-btn--active),
+:root:not([data-theme='light']) .mode-btn:not(.mode-btn--active):hover {
+  background: #000000;
+}
+
 .mode-btn__title-row {
   display: flex;
   align-items: center;
