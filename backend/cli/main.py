@@ -558,6 +558,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     # non-LLM commands (--help-style inspection) stay quiet and fast.
     if argv and argv[0] == "config":
         return config_cmd.main(argv[1:])
+    if argv and argv[0] == "setup":
+        from backend.llm.key_setup import run_setup
+
+        return run_setup(argv[1] if len(argv) > 1 else None)
 
     # Windows consoles default to cp1252 and raise UnicodeEncodeError on
     # non-Latin-1 output; LLM replies can contain emoji or other Unicode,
@@ -568,11 +572,24 @@ def main(argv: Optional[list[str]] = None) -> int:
         except (AttributeError, ValueError):
             pass
     print_banner()
+    # First-run key setup: after banner, before the daemon/first chat, so
+    # the very first session has working providers.  No-op (beyond a
+    # hint line) when keys exist or the session isn't interactive.
+    try:
+        from backend.llm.key_setup import ensure_keys_at_startup
+
+        ensure_keys_at_startup()
+    except Exception:  # noqa: BLE001 - setup must never block startup
+        pass
     try:
         _, port, _ = launcher.start()
     except SystemExit as exc:
         print(f"Could not start the daemon: {exc}", file=sys.stderr)
         return 1
+    # The dashboard is confirmed serving now (start() polls /health before
+    # returning) — open it in the default browser so concepts, assessments
+    # and diagrams are visible while the chat session runs in the terminal.
+    launcher.open_dashboard(port)
     try:
         run_session(port)
     except KeyboardInterrupt:

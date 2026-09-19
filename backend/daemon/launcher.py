@@ -63,6 +63,22 @@ def _wait_until_ready(port: int, timeout: float = READY_TIMEOUT_SECONDS) -> bool
     return False
 
 
+def open_dashboard(port: int = DEFAULT_PORT) -> bool:
+    """Open the dashboard in the default browser. True on success.
+
+    Call only once the daemon is confirmed ready: ``start`` guarantees
+    that for a fresh start (it polls /health), and an adopted port is
+    answering by definition.
+    """
+    url = f"http://localhost:{port}/"
+    try:
+        import webbrowser
+
+        return webbrowser.open(url, new=2, autoraise=True)
+    except Exception:  # noqa: BLE001 - a browser failure must not kill the CLI
+        return False
+
+
 def _daemon_command(port: int) -> tuple[list[str], dict[str, str]]:
     """Return ``(argv, env)`` for the detached daemon process.
 
@@ -102,15 +118,32 @@ def _start_detached(port: int) -> subprocess.Popen:
 
 
 def start() -> tuple[int, int, bool]:
-    """Start the daemon if it is not already running.
+    """Start the daemon if necessary, or adopt an already-running one.
 
-    Returns ``(pid, port, started_now)``.
+    The "already running" check is port-based (127.0.0.1:<default port>
+    accepting connections): if something healthy answers on the dashboard
+    port, reuse it instead of starting a second daemon. A stale pid file
+    pointing at a dead process — or at a port nobody listens on — must
+    never cause a duplicate daemon.
+
+    Returns ``(pid, port, started_now)``; ``pid`` is ``None`` for an
+    adopted daemon this process did not spawn.
     """
     running = state.is_running()
     if running:
         pid, port = running
         print(f"Daemon already running (pid {pid}, port {port}).")
         return pid, port, False
+
+    # Something already serves the dashboard port (e.g. a daemon started
+    # elsewhere, with pid state this install can't see) → adopt it rather
+    # than spawn a rival that would lose the port race anyway.
+    if state.port_open(DEFAULT_PORT):
+        print(
+            f"Port {DEFAULT_PORT} is already serving the dashboard; "
+            "reusing it instead of starting a second daemon."
+        )
+        return None, DEFAULT_PORT, False
 
     # Clear stale state left behind by a crashed or stopped daemon.
     state.clear_state()
@@ -188,7 +221,7 @@ def main(argv: list[str] | None = None) -> None:
         prog="codelith-daemon",
         description="Manage the CodeLith local daemon.",
     )
-    parser.add_argument("command", choices=["start", "status", "stop"])
+    parser.add_argument("command", choices=["start", "status", "stop", "open"])
     args = parser.parse_args(argv)
 
     if args.command == "start":
@@ -197,6 +230,9 @@ def main(argv: list[str] | None = None) -> None:
         status()
     elif args.command == "stop":
         stop()
+    elif args.command == "open":
+        _pid, port, _started = start()
+        open_dashboard(port)
 
 
 if __name__ == "__main__":
