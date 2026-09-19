@@ -1,10 +1,11 @@
-import type { Progress } from '../../types/concept'
+import type { Assessment, Progress } from '../../types/concept'
 
 interface ProgressPanelProps {
   progress: Progress | null
+  assessments: Assessment[]
 }
 
-export default function ProgressPanel({ progress }: ProgressPanelProps) {
+export default function ProgressPanel({ progress, assessments }: ProgressPanelProps) {
   if (!progress) {
     return (
       <div className="card">
@@ -16,7 +17,20 @@ export default function ProgressPanel({ progress }: ProgressPanelProps) {
     )
   }
 
-  const categories = Object.entries(progress.categories)
+  // Mastered = concept whose assessment was answered correctly (same rule
+  // the backend's get_progress uses for total_concepts). Derived here so
+  // the panel can show WHICH concepts — not just how many. Intersecting
+  // with progress.concepts mirrors the backend's join: a concept whose
+  // row was cleared no longer counts, even if its assessment remains.
+  const passedNames = new Set<string>()
+  for (const a of assessments) {
+    if (a.answered && a.correct) {
+      passedNames.add(a.concept_name)
+    }
+  }
+  const masteredConcepts = (progress.concepts ?? [])
+    .filter((c) => passedNames.has(c.name))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="card">
@@ -41,14 +55,12 @@ export default function ProgressPanel({ progress }: ProgressPanelProps) {
         </p>
       )}
 
-      {categories.length > 0 && (
-        <div className="progress-cats">
-          {categories.map(([cat, count]) => (
-            <div key={cat} className="progress-cat">
-              <span className="progress-cat-name">{cat}</span>
-              <span className="progress-cat-count">
-                {count}
-              </span>
+      {masteredConcepts.length > 0 && (
+        <div className="progress-concepts">
+          {masteredConcepts.map((concept) => (
+            <div key={concept.name} className="progress-concept">
+              <span className="progress-concept-name">{concept.name}</span>
+              <span className="progress-concept-count">{concept.category}</span>
             </div>
           ))}
         </div>

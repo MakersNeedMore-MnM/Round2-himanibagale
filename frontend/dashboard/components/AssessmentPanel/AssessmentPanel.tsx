@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Assessment } from '../../types/concept'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
+import { IconCheckCircle, IconCrossCircle } from '../Icons/Icons'
 
 interface AssessmentPanelProps {
   assessments: Assessment[]
@@ -204,7 +205,7 @@ export default function AssessmentPanel({
       {/* All answered */}
       {!currentQuestion && answeredAssessments.length > 0 && (
         <p className="text-secondary text-sm assessment-all-done">
-          All questions answered. 🎉
+          All questions answered.
         </p>
       )}
 
@@ -222,7 +223,11 @@ export default function AssessmentPanel({
               >
                 <div className="answered-row">
                   <span className="answered-icon">
-                    {assessment.correct ? '✅' : '❌'}
+                    {assessment.correct ? (
+                      <IconCheckCircle size={17} />
+                    ) : (
+                      <IconCrossCircle size={17} className="cl-icon-wrong" />
+                    )}
                   </span>
                   <div className="answered-content">
                     <p className="answered-question">

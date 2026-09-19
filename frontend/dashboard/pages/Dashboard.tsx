@@ -384,7 +384,7 @@ export default function Dashboard() {
 
           {activeSection === 'learning-progress' && (
             <section id="learning-progress" className="cl-section">
-              <ProgressPanel progress={progress} />
+              <ProgressPanel progress={progress} assessments={assessments} />
             </section>
           )}
 

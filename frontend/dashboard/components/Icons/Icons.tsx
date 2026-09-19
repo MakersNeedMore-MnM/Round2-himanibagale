@@ -186,3 +186,24 @@ export function IconCloudOff({ size = 18, className }: IconProps) {
     </svg>
   )
 }
+
+/** Assessment passed — circled tick, echoing the checklist ticks. */
+export function IconCheckCircle({ size = 18, className }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12.25l2.6 2.6L16 9" />
+    </svg>
+  )
+}
+
+/** Assessment failed — circled cross. */
+export function IconCrossCircle({ size = 18, className }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9 9l6 6" />
+      <path d="M15 9l-6 6" />
+    </svg>
+  )
+}
