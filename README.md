@@ -1,9 +1,9 @@
 # CodeLith 
 <p><strong>Build with AI. Understand what you build.</strong></p>
 
-AI has made software development faster than ever, but it has also made it easier to build without understanding. For students and new developers especially, AI-generated code can become a black box rather than an opportunity to learn. 
+<strong>Problem Statement</strong> - AI has made software development faster than ever, but it has also made it easier to build without understanding. For students and new developers especially, AI-generated code can become a black box rather than an opportunity to learn. 
 
-CodeLith bridges this gap by combining AI-powered coding with contextual learning—as the agent builds, it identifies the concepts introduced in the code, explains them visually, assesses the user's understanding, and tracks their progress. It transforms AI-assisted coding from simply getting code to actually understanding how it works.
+<strong>Solution</strong> - CodeLith bridges this gap by combining AI-powered coding with contextual learning—as the agent builds, it identifies the concepts introduced in the code, explains them visually, assesses the user's understanding, and tracks their progress. It transforms AI-assisted coding from simply getting code to actually understanding how it works.
 
 ## Prototype
 
@@ -74,7 +74,18 @@ The learning is grounded in evidence, not in a static tutorial library:
     the new code.
 - The **assessment** checks whether the user can reason about the choice,
     rather than merely recognize its name.
-- **Mastery** means the user can explain and reuse the idea independently. 
+- **Mastery** means the user can explain and reuse the idea independently.
+
+## Key Features
+
+- Multi-agent AI architecture using specialized coding, debugging, teaching, assessment, grading, and concept-detection agents.
+- Interactive CLI with chat, mode switching, session reset, and daemon controls.
+- Three working modes learn, pair-programming, and autonomous.
+- Dashboard for conversations, concepts, teachings, assessments, and progress.
+- Secure API-key handling through environment variables, .env files, and the operating system credential store.
+- Visual Mermaid diagrams generated for programming concepts and rendered in the dashboard.
+- Socratic assessments that test whether users understand concepts rather than merely recognize them.
+- Automatic debugging flow when coding commands fail.
 
 ## Architecture
 
@@ -263,6 +274,26 @@ python -m pytest tests/ -v
 ## Contributing
 
 Want to contribute? Check out our [Contributing Guide](https://github.com/MakersNeedMore-MnM/Round2-himanibagale/blob/main/CONTRIBUTING.md).
+
+## Tech Stack
+### Frontend
+- React
+- TypeScript
+- Vite
+- Mermaid
+- Next.js
+
+### Backend
+- Python
+- SQLite
+- LangGraph
+
+### LLM/AI services
+- Groq
+- OpenRouter
+
+## Team members
+[Himani Bagale](https://github.com/Himani78116)
 
 ## License
 
