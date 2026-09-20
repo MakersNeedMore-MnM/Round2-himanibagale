@@ -262,9 +262,9 @@ python -m pytest tests/ -v
 ```
 ## Contributing
 
-Want to contribute? Check out our [Contributing Guide](CONTRIBUTING.md).
+Want to contribute? Check out our [Contributing Guide](https://github.com/MakersNeedMore-MnM/Round2-himanibagale/blob/main/CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/MakersNeedMore-MnM/Round2-himanibagale/blob/main/LICENSE).
 

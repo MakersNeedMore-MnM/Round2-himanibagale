@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,6 +8,24 @@ version = "0.1.0"
 description = "A multi-agent AI mentor that blends coding assistance with adaptive teaching."
 readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Himani Bagale", email = "himanibagale@gmail.com" },
+]
+keywords = ["ai", "tutor", "mentor", "coding-assistant", "langgraph", "education"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Education",
+    "Topic :: Software Development",
+]
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -16,6 +34,10 @@ dependencies = [
     "langchain-core",
     "keyring",
 ]
+
+[project.urls]
+Homepage = "https://github.com/MakersNeedMore-MnM/Round2-himanibagale"
+Repository = "https://github.com/MakersNeedMore-MnM/Round2-himanibagale"
 
 [project.scripts]
 codelith = "backend.cli.main:main"
