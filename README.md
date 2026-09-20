@@ -54,11 +54,11 @@ so the terminal and browser stay synchronized.
 
 ## Install and run
 
-The planned public distribution is a PyPI package named `mentor-ai`:
+CodeLith is distributed on PyPI as `codelith`:
 
 ```bash
-pip install mentor-ai
-mentor
+pip install codelith
+codelith
 ```
 
 ## Commands
@@ -107,12 +107,12 @@ to the same daemon, which is the single source of truth for session state
 ```mermaid
 flowchart TB
     subgraph Local[User machine]
-        CLI[mentor CLI<br/>interactive terminal]
+        CLI[codelith CLI<br/>interactive terminal]
         UI[React dashboard<br/>concepts, activity, progress]
         D[Local daemon<br/>FastAPI + uvicorn<br/>localhost]
         G[Agent graph<br/>LangGraph orchestration]
         DB[(SQLite<br/>local session state)]
-        K[(OS keyring<br/>Featherless key)]
+        K[(OS keyring<br/>Groq + OpenRouter keys)]
         CLI <-->|HTTP| D
         UI <-->|HTTP + SSE| D
         D --> G
@@ -135,7 +135,7 @@ flowchart TB
     X --> T
     A --> DB
     T --> DB
-    C -->|model request| LLM[Featherless API<br/>HTTPS]
+    C -->|model request| LLM[LLM providers<br/>Groq + OpenRouter<br/>HTTPS]
     R -->|model request| LLM
     X -->|model request when needed| LLM
     A -->|model request| LLM
@@ -165,8 +165,8 @@ CodeLith/
 ### Backend
 
 ```bash
-git clone https://github.com/your-username/CodeLith
-cd CodeLith
+git clone https://github.com/MakersNeedMore-MnM/Round2-himanibagale
+cd Round2-himanibagale
 python -m venv .venv
 .venv\Scripts\activate            # Windows (bash: source .venv/Scripts/activate)
 pip install -e .
