@@ -74,17 +74,7 @@ The learning is grounded in evidence, not in a static tutorial library:
     the new code.
 - The **assessment** checks whether the user can reason about the choice,
     rather than merely recognize its name.
-- **Mastery** means the user can explain and reuse the idea independently.
-
-### Three ways to work
-
-| Mode | Best for | Behavior |
-| --- | --- | --- |
-| `learn` | Building understanding | Detects concepts, explains the work, and asks questions about each new concept. |
-| `pair-programming` | Staying in the flow | Focuses on building while detecting concepts and asking occasional questions. |
-| `autonomous` | Finishing a well-defined task | Prioritizes implementation and debugging with minimal learning interruptions. |
-
-Switch modes from either interface. 
+- **Mastery** means the user can explain and reuse the idea independently. 
 
 ## Architecture
 
@@ -149,12 +139,46 @@ CodeLith/
 ├── pyproject.toml        # packaging config + `codelith` entry point
 └── README.md
 ```
-## Install and run
 
-CodeLith is distributed on PyPI as `codelith`:
+## Future Enhancements
+
+- Add session export/import so users can save conversations, concepts, assessments, and progress.
+- Add project/workspace awareness so CodeLith can remember the repository being studied and maintain project-specific learning context.
+- Add user progress analytics: mastered concepts, recurring mistakes, learning streaks, and recommended next topics.
+- Build a plugin system for custom agents, tools, concept detectors, and teaching strategies.
+
+# First-time CodeLith setup
+
+These steps are for users who installed CodeLith from PyPI for the first time.
+
+## 1. Install CodeLith
+
+Use Python 3.10 or newer:
+
+```powershell
+py -m pip install codelith
+```
+
+## 2. Start CodeLith
+
+```powershell
+codelith
+```
+
+On the first run, CodeLith asks for two API keys. Create them from the official provider pages:
+
+- Groq: <https://console.groq.com/keys>
+- OpenRouter: <https://openrouter.ai/keys>
+
+Paste each key when prompted. CodeLith validates the key before saving it to the Windows credential store. The keys are not written to the project or printed in the terminal.
+
+Groq powers teaching, explanations, assessment, and concept detection. OpenRouter powers the coding and debugging agents. Both keys are required for the complete experience.
+
+After setup, CodeLith starts its local daemon and opens the dashboard in your browser. The dashboard is normally available at <http://localhost:8765/>.
+
+Once installed, CodeLith can be launched anytime with a single command:
 
 ```bash
-pip install codelith
 codelith
 ```
 
@@ -181,7 +205,7 @@ picked up by the terminal automatically, and vice versa.
 | `codelith` | Chat session: first-run key setup, daemon autostart, dashboard link — opens in the browser after a short pause |
 | `codelith setup [groq\|openrouter]` | Enter or re-enter an API key (validated first, saved to the OS credential store) |
 | `codelith config show` | Show every model role and its resolved model |
-| `codelith config set <role> <model>` | Override one role's model (e.g. `coding`, `teaching`) |
+| `codelith config set <role> <model>` | Override one role's model (Available agent roles are `coding`, `debugging`, `teaching`, `assessment`,`grading`, and `detection`.) |
 | `codelith config unset <role>` | Remove a role's override — back to the built-in default |
 
 ### Daemon control
@@ -192,6 +216,18 @@ picked up by the terminal automatically, and vice versa.
 | `python -m backend.daemon.launcher status` | Show whether it runs, and on which port |
 | `python -m backend.daemon.launcher open` | Start it if needed, then open the dashboard in the browser |
 | `python -m backend.daemon.launcher stop` | Stop the daemon |
+
+
+### Three ways to work
+
+| Mode | Best for | Behavior |
+| --- | --- | --- |
+| `learn` | Building understanding | Detects concepts, explains the work, and asks questions about each new concept. |
+| `pair-programming` | Staying in the flow | Focuses on building while detecting concepts and asking occasional questions. |
+| `autonomous` | Finishing a well-defined task | Prioritizes implementation and debugging with minimal learning interruptions. |
+
+Switch modes from either interface.
+
 ## Development setup
 
 ### Backend
@@ -211,63 +247,6 @@ Run from source without installing the package:
 python -m backend.cli.main
 ```
 
-## Connecting the LLM providers
-
-Two API keys are used, each from a different provider:
-
-- **`GROQ_API_KEY`** — teaching-side models: teacher explanations, assessment
-  grading, concept detection, and dashboard questions. Defaults to Groq's
-  `openai/gpt-oss-120b`. Get a key at [console.groq.com/keys](https://console.groq.com/keys).
-- **`OPENROUTER_API_KEY`** — the coding and debug agents that read, write, and
-  edit files. Defaults to `qwen/qwen3-coder-next`. Get a key at [openrouter.ai/keys](https://openrouter.ai/keys).
-
-Keys are resolved from, in order: environment variables, the OS credential
-store (when saved there via `codelith setup`), a `.env` file in the project
-root, then a `.env` file in the daemon state directory (`~/.codelith/`).
-The `.env` files are re-read on every request, so adding a key takes effect
-immediately — no daemon restart needed.
-
-```bash
-# .env (project root, or ~/.codelith/.env for a machine-wide default)
-GROQ_API_KEY=gsk_...
-OPENROUTER_API_KEY=sk-or-...
-```
-
-### Customizing models (optional)
-
-CodeLith ships with sensible models for every role and needs zero model
-configuration — nothing is created or asked at startup. If you *want* a
-different model for a role, set it explicitly:
-
-```bash
-codelith config                       # see every role and its resolved model
-codelith config set coding anthropic/claude-sonnet-4.5
-codelith config unset coding          # back to default
-```
-
-This writes `~/.codelith/config.toml` (created only by `config set` — never
-automatically):
-
-```toml
-[models]
-coding = "anthropic/claude-sonnet-4.5"
-teaching = "openai/gpt-oss-120b"   # same model for several roles is fine
-```
-
-Roles: `coding`, `debugging`, `teaching`, `assessment`, `grading`, `detection`.
-Any role you leave out keeps its built-in default. Changes take effect on the
-next request — no daemon restart. An environment variable
-(`CODELITH_MODEL_<ROLE>`, e.g. `CODELITH_MODEL_CODING`) overrides the file,
-which is handy in CI. See `backend/llm/config.toml.example` for a template.
-### Controlling the daemon
-
-```bash
-python -m backend.daemon.launcher start    # start detached if not running
-python -m backend.daemon.launcher status   # is it running, on which port
-python -m backend.daemon.launcher open     # start if needed, then open the dashboard
-python -m backend.daemon.launcher stop     # stop it
-```
-
 ### Frontend (dashboard)
 
 ```bash
@@ -276,34 +255,14 @@ npm install
 npm run dev       # dev server with HMR on :5173, calls the daemon on :8765
 npm run build     # writes backend/daemon/static/ inside the Python package
 ```
-
-The production build lands directly in `backend/daemon/static/` — no copy
-step. The daemon serves it automatically at `http://127.0.0.1:8765/` when
-present; without it, the daemon runs API-only (the Vite dev server and the
-dashboard keep working either way).
-
-### Landing page (website)
-
-The public landing page is a separate Next.js app under `frontend/website/`
-with no connection to the Python package or the daemon:
-
-```bash
-cd frontend/website
-npm install
-npm run dev       # http://localhost:3000
-npm run build     # static production build (deploy to Vercel with frontend/website as root)
-```
-
 ### Tests
 
 ```bash
 python -m pytest tests/ -v
 ```
+## Contributing
 
-The suite covers diagram routing, concept categories, Mermaid validation,
-mode-based routing after coding, and a store-isolation tripwire that fails if
-any test could touch the real `~/.codelith` database.
-
+Want to contribute? Check out our [Contributing Guide](CONTRIBUTING.md).
 
 ## License
 
