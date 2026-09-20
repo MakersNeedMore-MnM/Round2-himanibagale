@@ -170,6 +170,99 @@ kbd {
   letter-spacing: -0.03em;
 }
 
+@keyframes section-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main > section {
+  animation: section-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+main > section:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+main > section:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+main > section:nth-child(4) {
+  animation-delay: 0.24s;
+}
+
+main > section:nth-child(5) {
+  animation-delay: 0.32s;
+}
+
+main > section:nth-child(6) {
+  animation-delay: 0.4s;
+}
+
+main > section:nth-child(7) {
+  animation-delay: 0.48s;
+}
+
+main > section:nth-child(8) {
+  animation-delay: 0.56s;
+}
+
+.mastery-feature-card,
+.features__item,
+.modes__card,
+.start__step,
+.contrib__card {
+  animation: section-reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mastery-feature-card:nth-child(2),
+.features__item:nth-child(2),
+.modes__card:nth-child(2),
+.start__step:nth-child(2),
+.contrib__card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.mastery-feature-card:nth-child(3),
+.features__item:nth-child(3),
+.modes__card:nth-child(3),
+.start__step:nth-child(3),
+.contrib__card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.features__item:nth-child(4),
+.start__step:nth-child(4),
+.contrib__card:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.features__item:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+.features__item:nth-child(6) {
+  animation-delay: 0.5s;
+}
+
+.features__item:nth-child(7) {
+  animation-delay: 0.6s;
+}
+
+.features__item:nth-child(8) {
+  animation-delay: 0.7s;
+}
+
+.features__item:nth-child(9) {
+  animation-delay: 0.8s;
+}
+
 main > section > .container {
   text-align: center;
 }

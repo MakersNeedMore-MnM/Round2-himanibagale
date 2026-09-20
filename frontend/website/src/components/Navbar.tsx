@@ -3,6 +3,7 @@ import logoDark from "@/assets/logo_darkmode.png";
 import { site } from "@/lib/site";
 
 const LINKS = [
+  { href: "#top", label: "Home" },
   { href: "#features", label: "Features" },
   { href: "#modes", label: "Modes" },
   { href: "#get-started", label: "Get started" },
