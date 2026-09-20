@@ -5,6 +5,41 @@ AI has made software development faster than ever, but it has also made it easie
 
 CodeLith bridges this gap by combining AI-powered coding with contextual learning—as the agent builds, it identifies the concepts introduced in the code, explains them visually, assesses the user's understanding, and tracks their progress. It transforms AI-assisted coding from simply getting code to actually understanding how it works.
 
+## Prototype
+
+<table>
+  <tr>
+    <th>CodeLith Terminal Agent</th>
+    <th>Real-time code explanations - Dark Mode</th>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/f275269f-51ec-4bc7-90bc-ca57c0b72534" alt="CodeLith Dashboard" width="500"/></td>
+    <td><img src="https://github.com/user-attachments/assets/7cd62bf1-7920-444d-aba9-578eefea2d33" alt="CodeLith Dashboard - Learning Progress" width="500"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <th>Track Your Learning Progress - Dark Mode</th>
+    <th>Choose Your Coding Mode - Dark Mode</th>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/a872b360-429b-4df4-85c8-54d1bb1711b3" alt="CodeLith Dashboard" width="500"/></td>
+    <td><img src="https://github.com/user-attachments/assets/0b5088f2-2c33-48ab-91e4-c423d01575d7" alt="CodeLith Dashboard - Learning Progress" width="500"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <th>Check Your Understanding - Light Mode</th>
+    <th>Ask CodeLith AI - Dark Mode</th>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/20ac5c89-6169-4698-9f64-713dc2dfbefd" alt="CodeLith Dashboard" width="500"/></td>
+    <td><img src="https://github.com/user-attachments/assets/363b3485-5cff-4b93-8dcc-82f1e45fec9e" alt="CodeLith Dashboard - Learning Progress" width="500"></td>
+  </tr>
+</table>
+
 ## How it works
 
 CodeLith does not attach a generic lesson to a coding session. It follows the
@@ -49,52 +84,7 @@ The learning is grounded in evidence, not in a static tutorial library:
 | `pair-programming` | Staying in the flow | Focuses on building while detecting concepts and asking occasional questions. |
 | `autonomous` | Finishing a well-defined task | Prioritizes implementation and debugging with minimal learning interruptions. |
 
-Switch modes from either interface. The daemon is the shared source of truth,
-so the terminal and browser stay synchronized.
-
-## Install and run
-
-CodeLith is distributed on PyPI as `codelith`:
-
-```bash
-pip install codelith
-codelith
-```
-
-## Commands
-
-### In the terminal session
-
-Typed at the `>` prompt, after the banner:
-
-| Command | Effect |
-| --- | --- |
-| `exit`, `quit`, `q` | Leave the session — the daemon keeps running in the background |
-| `reset`, `clear`, `/reset` | Start a fresh conversation |
-| `mode` | Show the current mode and the available modes |
-| `mode <name>` | Switch mode — one of `learn`, `pair-programming`, `autonomous` |
-
-Anything else is sent to the agent. Mode changes made on the dashboard are
-picked up by the terminal automatically, and vice versa.
-
-### CLI subcommands
-
-| Command | Effect |
-| --- | --- |
-| `codelith` | Chat session: first-run key setup, daemon autostart, dashboard link — opens in the browser after a short pause |
-| `codelith setup [groq\|openrouter]` | Enter or re-enter an API key (validated first, saved to the OS credential store) |
-| `codelith config show` | Show every model role and its resolved model |
-| `codelith config set <role> <model>` | Override one role's model (e.g. `coding`, `teaching`) |
-| `codelith config unset <role>` | Remove a role's override — back to the built-in default |
-
-### Daemon control
-
-| Command | Effect |
-| --- | --- |
-| `python -m backend.daemon.launcher start` | Start the daemon detached, if not already running |
-| `python -m backend.daemon.launcher status` | Show whether it runs, and on which port |
-| `python -m backend.daemon.launcher open` | Start it if needed, then open the dashboard in the browser |
-| `python -m backend.daemon.launcher stop` | Stop the daemon |
+Switch modes from either interface. 
 
 ## Architecture
 
@@ -159,7 +149,49 @@ CodeLith/
 ├── pyproject.toml        # packaging config + `codelith` entry point
 └── README.md
 ```
+## Install and run
 
+CodeLith is distributed on PyPI as `codelith`:
+
+```bash
+pip install codelith
+codelith
+```
+
+## Commands
+
+### In the terminal session
+
+Typed at the `>` prompt, after the banner:
+
+| Command | Effect |
+| --- | --- |
+| `exit`, `quit`, `q` | Leave the session — the daemon keeps running in the background |
+| `reset`, `clear`, `/reset` | Start a fresh conversation |
+| `mode` | Show the current mode and the available modes |
+| `mode <name>` | Switch mode — one of `learn`, `pair-programming`, `autonomous` |
+
+Anything else is sent to the agent. Mode changes made on the dashboard are
+picked up by the terminal automatically, and vice versa.
+
+### CLI subcommands
+
+| Command | Effect |
+| --- | --- |
+| `codelith` | Chat session: first-run key setup, daemon autostart, dashboard link — opens in the browser after a short pause |
+| `codelith setup [groq\|openrouter]` | Enter or re-enter an API key (validated first, saved to the OS credential store) |
+| `codelith config show` | Show every model role and its resolved model |
+| `codelith config set <role> <model>` | Override one role's model (e.g. `coding`, `teaching`) |
+| `codelith config unset <role>` | Remove a role's override — back to the built-in default |
+
+### Daemon control
+
+| Command | Effect |
+| --- | --- |
+| `python -m backend.daemon.launcher start` | Start the daemon detached, if not already running |
+| `python -m backend.daemon.launcher status` | Show whether it runs, and on which port |
+| `python -m backend.daemon.launcher open` | Start it if needed, then open the dashboard in the browser |
+| `python -m backend.daemon.launcher stop` | Stop the daemon |
 ## Development setup
 
 ### Backend
