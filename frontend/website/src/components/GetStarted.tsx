@@ -1,16 +1,16 @@
-import { site } from "@/lib/site";
-
 const STEPS = [
   {
     n: "1",
     title: "Install CodeLith",
     code: "pip install codelith",
+    packageLink: true,
   },
   {
     n: "2",
     title: "Configure your AI provider",
     code: "codelith setup",
-    hint: "Groq and/or OpenRouter keys — stored in your OS credential store or a .env file.",
+    hint: "Click the links below to get the keys or Configure your own LLM provider",
+    providers: true,
   },
   {
     n: "3",
@@ -42,16 +42,36 @@ export default function GetStarted() {
               <div>
                 <h3>{step.title}</h3>
                 <code className="start__code">{step.code}</code>
+                {step.packageLink && (
+                  <a
+                    className="start__package-link"
+                    href="https://pypi.org/project/codelith/0.1.0/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View my PyPI package
+                  </a>
+                )}
                 {step.hint && <p className="start__hint">{step.hint}</p>}
+                {step.providers && (
+                  <ul className="start__providers">
+                    <li>
+                      <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">
+                        Groq
+                      </a>
+                    </li>
+                    <li>
+                      <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">
+                        OpenRouter
+                      </a>
+                    </li>
+                  </ul>
+                )}
               </div>
             </li>
           ))}
         </ol>
 
-        <p className="start__python">
-          Requires Python {site.pythonRequires}. Works fully locally — session
-          state stays in SQLite on your machine.
-        </p>
       </div>
     </section>
   );
