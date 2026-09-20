@@ -1,22 +1,12 @@
+import Image from "next/image";
+import logoDark from "@/assets/logo_darkmode.png";
 import { site } from "@/lib/site";
 
 const LINKS = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#demo", label: "Demo" },
   { href: "#dashboard", label: "Dashboard" },
   { href: "#modes", label: "Modes" },
   { href: "#get-started", label: "Get started" },
 ];
-
-function LogoMark() {
-  return (
-    <span className="logo-mark" aria-hidden="true">
-      <span className="logo-mark__chevron">&lt;</span>
-      <span className="logo-mark__slash">/</span>
-      <span className="logo-mark__chevron">&gt;</span>
-    </span>
-  );
-}
 
 function GithubIcon() {
   return (
@@ -31,9 +21,7 @@ export default function Navbar() {
     <header className="navbar">
       <div className="container navbar__inner">
         <a href="#top" className="navbar__brand">
-          <LogoMark />
-          <span>{site.name}</span>
-          <span className="navbar__beta">beta</span>
+          <Image src={logoDark} alt={site.name} className="navbar__logo" priority />
         </a>
 
         <nav className="navbar__links" aria-label="Sections">

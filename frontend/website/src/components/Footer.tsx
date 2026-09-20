@@ -9,8 +9,6 @@ function GithubIcon() {
 }
 
 export default function Footer() {
-  const pypi = site.pypiPublished ? site.pypiUrl : null;
-
   return (
     <footer className="footer">
       <div className="container footer__inner">
@@ -24,16 +22,6 @@ export default function Footer() {
             <GithubIcon />
             View on GitHub
           </a>
-          {pypi ? (
-            <a href={pypi} target="_blank" rel="noopener noreferrer">
-              PyPI
-            </a>
-          ) : (
-            <span className="footer__soon" title="Package name planned; link added on publication">
-              PyPI (soon)
-            </span>
-          )}
-          <a href="#how-it-works">How it works</a>
           <a href="#get-started">Get started</a>
         </nav>
       </div>

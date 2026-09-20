@@ -9,6 +9,10 @@ export const site = {
 
   githubUrl: "https://github.com/MakersNeedMore-MnM/Round2-himanibagale",
 
+  /** Full contributing guide, linked from the website's contribute section. */
+  contributingUrl:
+    "https://github.com/MakersNeedMore-MnM/Round2-himanibagale/blob/main/CONTRIBUTING.md",
+
   /**
    * PyPI is not live yet — the UI renders the command without a link
    * while `pypiPublished` is false, and links pypi.org/project/codelith

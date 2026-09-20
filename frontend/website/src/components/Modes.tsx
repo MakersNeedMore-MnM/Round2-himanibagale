@@ -1,17 +1,17 @@
 const MODES = [
   {
     name: "Learn",
-    slug: "learn",
+    slug: "Mode 01",
     text: "Every new concept gets explained and assessed. Best when you're building to understand.",
   },
   {
     name: "Pair Programming",
-    slug: "pair-programming",
+    slug: "Mode 02",
     text: "Focus on shipping while CodeLith quietly tracks concepts and asks the occasional question.",
   },
   {
     name: "Autonomous",
-    slug: "autonomous",
+    slug: "Mode 03",
     text: "Minimal interruptions — the agent implements and debugs; learning stays available on the dashboard.",
   },
 ];

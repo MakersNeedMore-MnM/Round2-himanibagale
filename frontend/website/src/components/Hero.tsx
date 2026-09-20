@@ -39,9 +39,6 @@ function InstallCommand() {
     <div className="install" role="group" aria-label="Installation command">
       <span className="install__prompt">$</span>
       <code className="install__cmd">{site.installCommand}</code>
-      <span className="install__hint" title="Package name is planned; not yet published">
-        (coming to PyPI)
-      </span>
       <button
         type="button"
         className={`install__copy${copied ? " install__copy--done" : ""}`}
@@ -54,67 +51,10 @@ function InstallCommand() {
   );
 }
 
-function DashboardMiniPreview() {
-  return (
-    <div className="hero-dashboard" aria-label="Animated dashboard preview">
-      <div className="hero-dashboard__bar">
-        <span className="hero-dashboard__traffic" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span className="hero-dashboard__title">codelith / learning session</span>
-        <span className="hero-dashboard__status">
-          <span className="hero-dashboard__status-dot" /> live
-        </span>
-      </div>
-
-      <div className="hero-dashboard__body">
-        <div className="hero-dashboard__activity">
-          <div className="hero-dashboard__eyebrow">Agent activity</div>
-          <div className="hero-dashboard__activity-line">
-            <span className="hero-dashboard__pulse" />
-            Reading auth/routes.py
-          </div>
-          <div className="hero-dashboard__activity-line hero-dashboard__activity-line--muted">
-            <span className="hero-dashboard__check">&#10003;</span>
-            Tests passed · 4 concepts found
-          </div>
-          <div className="hero-dashboard__progress">
-            <span />
-          </div>
-        </div>
-
-        <div className="hero-dashboard__concept">
-          <div className="hero-dashboard__eyebrow">New concept detected</div>
-          <strong>Dependency Injection</strong>
-          <p>Explained from the code the agent just changed.</p>
-          <div className="hero-dashboard__concept-footer">
-            <span>Visual explanation ready</span>
-            <span className="hero-dashboard__spark">&#10022;</span>
-          </div>
-        </div>
-
-        <div className="hero-dashboard__assessment">
-          <div className="hero-dashboard__eyebrow">Assessment queue</div>
-          <strong>1 question ready</strong>
-          <p>Why does this make testing easier?</p>
-          <span className="hero-dashboard__answer-line" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Hero() {
   return (
     <section className="hero" id="top">
       <div className="container">
-        <span className="badge hero__eyebrow">
-          <span className="hero__dot" aria-hidden="true" />
-          Local AI coding agent + learning dashboard
-        </span>
-
         <h1 className="hero__title">
           A coding agent
           <br />
@@ -143,13 +83,6 @@ export default function Hero() {
         </div>
 
         <InstallCommand />
-
-        <p className="hero__providers">
-          Runs locally against Groq and OpenRouter — your keys, your machine,
-          your session state.
-        </p>
-
-        <DashboardMiniPreview />
       </div>
     </section>
   );
